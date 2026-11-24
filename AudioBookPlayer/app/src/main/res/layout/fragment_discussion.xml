@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  讨论区标签页：只放帖子列表。
+
+  发帖表单已移出本布局 —— 改由「发现」页右下角的「＋」弹出
+  CreatePostBottomSheet（布局在 dialog_create_post.xml）。这样列表能占满整屏，
+  也不会因为顶部常年挂着一块输入框而挤掉可见的帖子条数。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
+        android:padding="8dp"
+        android:text="最新帖子"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPosts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="还没有帖子，来说两句吧"
+        android:textColor="@android:color/secondary_text_dark"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+</LinearLayout>

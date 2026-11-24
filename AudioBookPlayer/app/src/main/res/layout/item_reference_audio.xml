@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  参考音频列表项。
+
+  ## 布局结构（自上而下）
+    1. 名称
+    2. 来源 · 大小
+    3. 操作按钮行（左对齐，紧跟在信息下方）
+    4. 与下一条记录之间的分割线
+
+  ## 几个刻意的选择
+  · **不横向排成一行**：把"图标 + 名称 + 4 个操作"全塞进一行时，
+    名称列会被按钮按自身宽度挤到只剩约 104dp，文件名被截断成"我的参考音…"。
+    改成上下结构后名称有整行可用。
+  · **左侧没有图标**：曾经有一个装饰性的播放图标，它不表示任何操作
+    （真正的播放入口是「合成试听」与「试听原声」），已移除。
+  · **按钮左对齐**（原为右对齐）：按需求"放到左侧、放在音频信息的下方"。
+    左对齐也让按钮与上方文字的左边界对齐，视觉上属于同一条记录的同一栏。
+  · **分割线用本项底部的 1px View**，而不是 RecyclerView 的 DividerItemDecoration：
+    本列表会动态增删条目（导入/删除/下载），用 ItemDecoration 时
+    最后一行的分割线处理、以及增删动画期间的分割线错位都要额外照顾；
+    画在 item 内部则天然跟随条目一起进退，不需要额外状态。
+    最后一条下面会多一条线，但它紧邻"我的参考音频"标题区，
+    视觉上起到的是区域收尾作用，可接受。
+
+  ## 两个"试听"的区别（这是两个按钮并存的理由）
+  · 「合成试听」= 用这条音频克隆音色，让服务端 /api/tts/clone 合成固定样例句再播放（需联网）
+  · 「试听原声」= 直接播放这条参考音频本身（纯本地，不联网）
+  用户想判断的是"克隆出来的音色像不像我"，只有两者都听得到才比得出来。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- 信息区 + 操作区共用一层内边距容器：
+         分割线要通栏（贴到左右边缘）才像一条分隔，
+         所以 padding 放在内层而不是根布局上。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <!-- 第一行：名称在左、来源·大小在右，同一行。
+             把来源与大小挪到右侧是因为它们是**次要信息**：
+             用户扫列表时主要认名称，把它们放在名称下方会让每条记录多占一行高度，
+             而挪到右侧既不丢失信息，又让列表更紧凑、名称更容易一眼扫到。
+
+             ⚠️ 名称用 layout_weight=1、来源用 wrap_content，且**来源不加 weight**：
+             Android 先给 wrap_content 的控件分配其固有宽度，剩余空间才给带 weight 的。
+             所以空间不足时被压缩的是**名称**（它有 ellipsize 会显示省略号），
+             而来源·大小完整保留 —— 这正是想要的优先级：
+             名称截断仍能靠上下文认出来，而"· 84 KB"被截成"…"则完全没有意义。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvRefName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="参考音频"
+                android:textSize="16sp"
+                android:textColor="@android:color/primary_text_light"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/tvRefMeta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="12sp"
+                android:textColor="@android:color/secondary_text_dark"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- 操作按钮行：位于音频信息下方，左对齐 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnPreviewRef"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="合成试听"
+                android:textSize="12sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnPlayOriginal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="试听原声"
+                android:textSize="12sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnShareRef"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="分享"
+                android:textSize="12sp"
+                android:layout_marginEnd="4dp" />
+
+            <ImageButton
+                android:id="@+id/btnDeleteRef"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:contentDescription="删除"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 与下一条记录之间的分割线：通栏、1px。
+         用具体颜色而不是 ?android:attr/divider：后者在部分主题下解析为
+         ColorDrawable 且带固有高度，容易出现"线很粗"或"看不见"两种极端。 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#22000000" />
+
+</LinearLayout>

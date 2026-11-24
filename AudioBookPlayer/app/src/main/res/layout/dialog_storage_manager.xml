@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  存储管理弹窗内容：摘要文字 + 书籍列表。
+  不用 MaterialAlertDialogBuilder.setItems()：Material 1.12.0 的
+  mtrl_alert_dialog.xml 的 contentPanel 里没有 listView 节点，AlertController
+  找不到 listView 会整体跳过 items 分支，setItems 传的数组被静默吞掉
+  （2026-10-22 K30 Pro 真机复现：弹窗只剩消息和按钮）。
+  改用 setView() 走 customPanel，列表由本布局自己渲染。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvStorageSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="8dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="16sp" />
+
+    <ListView
+        android:id="@+id/listBooks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:divider="?android:attr/listDivider"
+        android:dividerHeight="1dp"
+        android:scrollbars="vertical" />
+
+</LinearLayout>

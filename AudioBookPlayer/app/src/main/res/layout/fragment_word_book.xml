@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  单词本列表页（「我的 - 单词本」）。
+
+  结构与 fragment_favorites.xml 一致：标题条 + FrameLayout(RecyclerView + 空态)。
+  标题条背景用 ?attr/colorSurface（跟随日夜），而不是收藏页那个写死的
+  @android:color/darker_gray —— 后者在夜间模式下是一块刺眼的深灰，与整体不协调。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="单词本"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:padding="12dp"
+        android:background="?attr/colorSurface" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewWordBook"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/tvWordBookEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="暂无收藏单词\n阅读英文电子书时，点读查词后点击收藏即可加入这里"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</LinearLayout>

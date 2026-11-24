@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  离线词典管理弹窗（下载 / 卸载）。
+
+  进度条默认 GONE，只有下载/解压时才 VISIBLE —— 静态界面上一条永远空的
+  进度槽看起来像「卡住了」。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="12dp">
+
+    <TextView
+        android:id="@+id/tvDictStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="?attr/colorOnSurface" />
+
+    <ProgressBar
+        android:id="@+id/pbDictProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvDictSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <Button
+        android:id="@+id/btnDictPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="下载词典" />
+
+    <!-- 卸载已安装的词典时才显示 -->
+    <Button
+        android:id="@+id/btnDictUninstall"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="卸载词典"
+        android:visibility="gone" />
+</LinearLayout>

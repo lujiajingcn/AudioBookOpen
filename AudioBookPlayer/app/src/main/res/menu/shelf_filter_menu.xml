@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 书架分类筛选菜单：顶部筛选图标点开后弹出。
+     checkableBehavior="single" 让当前生效的分类带选中态，
+     用户一眼能看出现在按什么在过滤。 -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/action_filter_all"
+            android:title="全部" />
+        <item
+            android:id="@+id/action_filter_local"
+            android:title="本地" />
+        <item
+            android:id="@+id/action_filter_store"
+            android:title="书城" />
+        <item
+            android:id="@+id/action_filter_url"
+            android:title="URL" />
+        <item
+            android:id="@+id/action_filter_uncategorized"
+            android:title="未分类" />
+    </group>
+</menu>

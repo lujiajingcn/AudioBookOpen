@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!--
+          Step 0: 合成方式（在线 / 本机下拉选择）。
+
+          默认「在线」。选「本机」时若尚未下载 MOSS-TTS-Nano 模块，弹窗引导去下载
+          （见 TtsFragment 的 spinnerSynthesisMode 监听 / promptDownloadMossModule）。
+
+          为什么从「点开始合成时弹对话框」改成页面顶部的下拉：合成方式是**合成前的
+          全局设定**，越早可见越好 —— 原先要点完书、选完音色、按下「开始合成」
+          才会弹窗告知有两条路，且每次合成都要重复选一次。放到最上方后，
+          两种模式的代价（积分 vs 一次性下载 725 MB）在动手之前就一目了然。
+
+          版式：标题与下拉同一行，说明文案紧贴下拉左边缘（把下拉和说明放进标题右侧的
+          同一列，靠布局结构天然对齐，而不是给说明硬写一个与标题等宽的左边距）。
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="16dp">
+
+            <!-- 下拉与其说明文案同处一列：说明的左边缘 = 下拉的左边缘 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <Spinner
+                    android:id="@+id/spinnerSynthesisMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/tvModeHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="在线合成：消耗积分，速度快（需登录）"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/secondary_text_dark"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!--
+          「本机音色」原本在这里单独摆一个下拉（layoutLocalVoice），现已**并入**
+          下方「预设音色」分支的那个下拉（spinnerDefaultVoice）：
+            · 合成方式=在线 → 该下拉列服务端预设音色（name (voiceId)）；
+            · 合成方式=本机 → 该下拉列模块内置音色（音色名，如 Junhao）。
+          为什么合并：两个下拉并存时，用户会同时"选中"参考音频与内置音色，
+          而本机引擎的判据是「有参考音频就用参考音频」—— 于是「我明明选了 Junhao，
+          怎么声音不像」成了一个无解的疑问。合并成同一个下拉后，
+          音色来源只剩一个入口，天然互斥。
+          判定规则见 TtsVoiceOptions.computePresetVoiceOptions。
+        -->
+
+        <!-- Step 1: Select book(s) -->
+        <Button
+            android:id="@+id/btnSelectBook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📚 选择电子书（可多选）"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvSelectedBook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="未选择书籍"
+            android:textSize="14sp"
+            android:textColor="@android:color/secondary_text_dark"
+            android:layout_marginBottom="16dp"
+            android:maxLines="5"
+            android:scrollbars="vertical" />
+
+        <!--
+          Step 2: 参考音频来源。
+
+          来源下拉（我的参考音频库 / 预设音色）决定下方显示哪个分支：
+            · 我的参考音频库（**默认**）：库内具体参考音频列表，选中哪条就用哪条克隆音色；
+            · 预设音色：服务端预设音色列表，免参考音频直接合成。
+          两者互斥 —— 切换来源即清掉另一分支的选中（见 TtsFragment 来源下拉监听），
+          否则合成逻辑会拿到与下拉不一致的音色（在线合成里参考音频优先级更高）。
+
+          历史演进：原先这里是「📂 选择音频文件」（系统文件选择器）与
+          「🎵 从我的参考音频库选择」两个入口；先按需求去掉前者（想用手机上的音频，
+          先去「我的 - 参考音频管理」用「从手机导入」收进库），再把后者从
+          「按钮 → 弹窗」两跳收敛成来源下拉 + 内联列表（本轮需求）。
+
+          版式：与上方「合成方式」保持一致 —— 标题与来源下拉同一行，说明文案紧贴
+          下拉左边缘（下拉与说明同处标题右侧的一列）。
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="8dp">
+
+            <!-- 来源下拉 + 其说明文案同处一列：说明的左边缘 = 下拉的左边缘 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- 来源下拉：我的参考音频库（默认）/ 预设音色 -->
+                <Spinner
+                    android:id="@+id/spinnerReferenceSource"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/tvSourceHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="我的参考音频库：用库里已保存的音色（克隆）合成，可在「我的 - 参考音频管理」中增删。"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/secondary_text_dark"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!--
+          分支一：我的参考音频库（默认可见）。
+          「🎙️ 录制参考音频」入口在「我的 - 参考音频管理」页，本分支只负责选用。
+        -->
+        <LinearLayout
+            android:id="@+id/layoutSourceLibrary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 库内具体参考音频列表（录制 / 从手机导入 / 从服务器与分享榜下载的都在这里） -->
+            <Spinner
+                android:id="@+id/spinnerReferenceLibrary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp" />
+
+            <!--
+              状态行：只在空库 / 未选中时给引导（见 TtsFragment.updateReferenceStatusText）。
+              已选中时整行隐藏 —— 上方下拉里就是当前选中的那条，重复一遍没有意义。
+            -->
+            <TextView
+                android:id="@+id/tvSelectedFile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="14sp"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp" />
+        </LinearLayout>
+
+        <!--
+          分支二：预设音色（默认隐藏，来源下拉切过去才显示）。
+
+          这个下拉**随合成方式换内容**：
+            · 在线 → 服务端预设音色（免参考音频直接合成）；
+            · 本机 → 模块内置音色（音色名，无需参考音频/登录/积分）。
+          见 TtsFragment.applyPresetSpinnerForMode 与 TtsVoiceOptions。
+        -->
+        <LinearLayout
+            android:id="@+id/layoutSourcePreset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- #20：预设音色（无需录制/上传参考音频，直接选音色合成） -->
+            <Spinner
+                android:id="@+id/spinnerDefaultVoice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvVoiceHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="选中预设音色后，整本将直接以该音色合成，可免参考音频；逐段音色可在听书页调整。"
+                android:textSize="12sp"
+                android:textColor="@android:color/secondary_text_dark"
+                android:layout_marginBottom="16dp" />
+        </LinearLayout>
+
+        <!--
+          音色试听（两个来源分支共用**同一个**按钮）。
+
+          ⚠ 位置有讲究：此按钮原先嵌在 layoutSourceLibrary 里面，切到「预设音色」时
+          整块容器 GONE，按钮跟着消失 —— 于是选了预设音色的用户没有任何办法听到它，
+          只能看名字盲选（UI 走查 P2-5）。现在提到两个容器之外，靠 enabled 状态区分：
+            · 来源=我的参考音频库 → 「🎧 试听我的音色」（用当前参考音频克隆一段样音）；
+            · 来源=预设音色     → 「🎧 试听该音色」（直接请求该音色合成一段样音）。
+          文案与可用态统一由 TtsFragment.updatePreviewVoiceButton 计算，这里不写死。
+        -->
+        <Button
+            android:id="@+id/btnPreviewVoice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎧 试听我的音色"
+            android:enabled="false"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginBottom="12dp"
+            android:layout_marginTop="4dp" />
+
+        <!-- 积分提示 -->
+        <TextView
+            android:id="@+id/tvCreditHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="#cf1322"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 本次合成积分预估 / 实耗（#13 合成前预估 + 完成后标注消耗） -->
+        <TextView
+            android:id="@+id/tvCostEstimate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <!-- Step 3: Synthesize -->
+        <Button
+            android:id="@+id/btnSynthesize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⬆️ 开始合成"
+            android:enabled="false"
+            android:layout_marginTop="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_marginTop="8dp" />
+
+        <!--
+          本机合成可能持续几十分钟（实测应用内实时率约 0.1，即 10 分钟音频要跑约 100 分钟），
+          没有一个能中止的入口是不可接受的 —— 用户会被锁在一个停不下来的操作里。
+          在线合成的进度也有类似诉求，但它的任务在服务端，取消语义更复杂，
+          故这个按钮只在**本机合成**进行中出现（见 TtsFragment 的可见性切换）。
+        -->
+        <Button
+            android:id="@+id/btnCancelSynthesis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="中止合成"
+            android:visibility="gone"
+            android:layout_marginTop="4dp" />
+
+        <!--
+          暂停/继续切换。放在「中止」上方，按危险程度排序：暂停可逆、中止不可逆，
+          把不可逆的操作放在更下方，减少误触。
+          文案由代码按状态切换（暂停合成 / 继续合成），不在布局里写死。
+        -->
+        <Button
+            android:id="@+id/btnPauseSynthesis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="暂停合成"
+            android:visibility="gone"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="@android:color/secondary_text_dark"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnPlayResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="▶️ 播放合成结果"
+            android:visibility="gone"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>

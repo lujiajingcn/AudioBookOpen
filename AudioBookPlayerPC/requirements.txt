@@ -1,0 +1,27 @@
+# AudioBookPlayerPC —— 桌面有声书阅读器
+# Python >= 3.10, PySide6 (Qt 6)
+
+# GUI
+PySide6>=6.6
+
+# HTTP / API
+requests>=2.31
+sseclient-py>=1.8          # Server-Sent Events client
+
+# Audio playback
+pygame>=2.5                # MP3/WAV 播放（轻量）
+
+# 电子书解析
+pypdf>=4.0                 # PDF 文本提取
+ebooklib>=0.18             # EPUB 解析
+
+# 音频处理
+pydub>=0.25                # WAV/MP3 转换（依赖 ffmpeg）
+
+# 本机 TTS 引擎（可选，需 conda 环境单独装 onnxruntime）
+# onnxruntime>=1.17
+# sentencepiece>=0.1.99
+# numpy>=1.24
+
+# 工具
+pathlib2; python_version<"3.4"

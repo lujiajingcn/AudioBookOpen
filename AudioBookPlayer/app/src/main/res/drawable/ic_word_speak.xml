@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  「朗读该单词」按钮图标：Material Symbols 的 volume_up（喇叭，Apache-2.0，与本工程
+  其它 Material 图标同源），viewport 24×24。
+
+  与收藏按钮（ic_word_book）并列在查词弹窗的单词行末尾，见 DictLookupSheet.bindSpeakButton。
+
+  ⚠️ **单态图标，颜色交给布局上的 `app:tint`**：
+  收藏按钮是「两态」（灰星/琥珀星）才需要在各 drawable 里写死 fillColor、刻意不带 tint；
+  这个按钮只有一态（点了就念），所以反过来 —— fillColor 写成白色占位，
+  真正的颜色由布局的 `app:tint="?attr/colorPrimary"` 决定，浅色/夜间主题各自跟随。
+
+  ⚠️ 别在这里加 android:tint：控件上的 app:tint 会覆盖它，只会让"改了这个文件却不生效"
+  变成一桩悬案（同 ic_word_book 注释里记的那次）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3,9v6h4l5,5V4L7,9H3z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16.5,12c0,-1.77 -1.02,-3.29 -2.5,-4.03v8.05c1.48,-0.73 2.5,-2.25 2.5,-4.02z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M14,3.23v2.06c2.89,0.86 5,3.54 5,6.71s-2.11,5.85 -5,6.71v2.06c4.01,-0.91 7,-4.49 7,-8.77s-2.99,-7.86 -7,-8.77z" />
+</vector>

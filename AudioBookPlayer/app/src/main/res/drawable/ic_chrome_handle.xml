@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  阅读页的「切栏把手」图标（方案 D，替代 162px 侧带）。
+
+  画的是一条竖立的小把手：中间一条粗竖线 + 两侧两段短横线（像拉手/拖动条的 grip）。
+  用 3 条 path 而不是实心矩形，是为了让视觉重量偏轻 —— 它常驻在正文右侧，
+  实心块会在阅读时像一块疤；线段式在深浅两种主题下都更像「可拖动的边」。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="48">
+
+    <!-- 中间主竖线：把手的主轴，比两侧短横线更粗更明显 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M12 14 L12 34" />
+
+    <!-- 左侧两段短横线：上短下长，暗示「可以拖」 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M7 19 L7 22" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M7 26 L7 31" />
+
+    <!-- 右侧两段短横线：与左侧不对称，避免看起来像一个居中的图标 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M17 19 L17 31" />
+</vector>

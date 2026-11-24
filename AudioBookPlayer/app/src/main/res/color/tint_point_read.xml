@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「点读」按钮的两态 tint。
+
+  ⚠️ 这里引用主题属性（?attr/...）而不是具体色值，所以**必须放在 res/color/**
+  而不是 res/drawable/：ColorStateList 只有作为颜色资源被 `app:tint` 加载时
+  才能拿到 View 解析好的 theme，混进 drawable 会在部分版本上解析成 null（图标变透明）。
+
+  · 选中 → colorPrimary（与应用主色一致，表示「模式已开启」）
+  · 未选中 → colorOnSurface（与顶部栏其它图标同色，表示「只是个入口」）
+
+  夜间模式不用另写 values-night：colorPrimary / colorOnSurface 都由
+  values-night/themes.xml 覆盖，本 selector 自动跟着主题走（见 detail#E6）。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/colorPrimary" android:state_selected="true" />
+    <item android:color="?attr/colorOnSurface" />
+</selector>

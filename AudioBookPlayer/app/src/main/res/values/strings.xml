@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">有声书</string>
+    <string name="playback_channel_name">播放服务</string>
+    <string name="playback_channel_desc">有声书后台播放通知</string>
+    <string name="notification_play">播放</string>
+    <string name="notification_pause">暂停</string>
+    <string name="notification_prev">上一段</string>
+    <string name="notification_next">下一段</string>
+    <string name="notification_segment">第 %d 段</string>
+
+    <!-- ==================== 启动页 ====================
+        版本号由 SplashActivity 从 BuildConfig.VERSION_NAME 注入。
+        启动图里原本烤死了「版本号：V 2.4.0」，与 build.gradle.kts 的 versionName 无关，
+        发版后必然对不上；现在统一走这里的格式，版本号只有 build.gradle.kts 一个来源。 -->
+    <string name="splash_version">版本号：V %1$s</string>
+    <string name="splash_copyright">© 2026 有声伴读 版权所有</string>
+</resources>

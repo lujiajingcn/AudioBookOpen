@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「发现 - 参考音频」排行榜条目。
+
+  ## 布局结构（自上而下）
+    1. 名次徽章 + 名称 + 分享者/使用量
+    2. 操作按钮行（左对齐，位于音频信息下方）
+    3. 「用这个声音读我的书」整行按钮
+    4. 与下一条记录之间的分割线
+
+  ## 与「我的 - 参考音频管理」保持同一套版式
+  两个列表展示的是同类内容（参考音频），此前它们各自演化出了不同排布，
+  导致同一个 App 里两处"音频记录"长得不一样。本次按需求统一为
+  「信息在上、按钮在下、按钮左对齐、条目之间有线」。
+  名次徽章保留在最左侧 —— 它是排行榜的核心信息，不属于"装饰性图标"。
+
+  ## 分割线画在本项底部
+  与 item_reference_audio.xml 同样的理由：列表会动态增删，
+  用 ItemDecoration 要额外照顾最后一行的处理与增删动画期间的分割线错位，
+  画在 item 内部则天然跟随条目一起进退。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <!-- 信息区：名次 + 名称 + 分享者/使用量 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- 名次：前三名用彩色圆底，其余灰底 -->
+            <TextView
+                android:id="@+id/tvRank"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:gravity="center"
+                android:text="1"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/rank_badge" />
+
+            <!-- 名称在左、来源·大小在右，与「我的-参考音频管理」保持同一套版式。
+                 名次徽章仍在最左 —— 它是排行榜的核心信息，不属于次要信息。 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:id="@+id/tvSharedName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="参考音频"
+                    android:textSize="15sp"
+                    android:textColor="@android:color/primary_text_light"
+                    android:ellipsize="end"
+                    android:maxLines="1" />
+
+                <TextView
+                    android:id="@+id/tvSharedMeta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="12sp"
+                    android:textColor="@android:color/secondary_text_dark"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 操作按钮行：位于音频信息下方，左对齐 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnPreviewShared"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="合成试听"
+                android:textSize="12sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnUseShared"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="使用"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <!-- 一键套用：把这条好声音直接拿去读我的书（先确保已进本地库，再跳到 TTS 预选该音色） -->
+        <Button
+            android:id="@+id/btnApplyToBook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="用这个声音读我的书"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- 与下一条记录之间的分割线：通栏、1px -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#22000000" />
+
+</LinearLayout>

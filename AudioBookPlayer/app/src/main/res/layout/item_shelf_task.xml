@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  一条合成任务。
+
+  ⚠️ 这里的 padding 分配不是随手写的，它与 item_shelf_book.xml 里
+  taskContainer 的 marginTop=0、分隔线的 marginTop=10dp 是一组 ——
+  三处合起来必须让所有间距与改造前完全一致（视觉零变化）：
+    · 书名 ↔ 状态文字  =  0 + 8        =  8dp
+    · 任务行 ↔ 任务行  =  4 + 8        = 12dp
+    · 末条任务 ↔ 分隔线 =  4 + 10       = 14dp
+    · 无任务时书名 ↔ 分隔线 = 0 + 10    = 10dp
+
+  为什么要这么分：那条「书名 ↔ 状态文字」的空隙原先有一半落在
+  taskContainer 的 marginTop 上 —— 那是容器**外缘**，不属于任何可点 View，
+  点它两边都不响应（死区）。现在整条 8dp 收进 llTaskStatus 自己的
+  paddingTop 里，而 llTaskStatus 就是点击目标；padding 在 View 的 bounds 内，
+  ⇒ 整条空隙都点得着。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="0dp"
+    android:paddingTop="0dp"
+    android:paddingBottom="4dp">
+
+    <!-- 状态行：合成已结束时整行可点（落地页与点书名一致，见 ShelfAdapter） -->
+    <LinearLayout
+        android:id="@+id/llTaskStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="8dp">
+
+        <TextView
+            android:id="@+id/tvTaskStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="处理中"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary" />
+
+        <TextView
+            android:id="@+id/tvTaskSource"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text=""
+            android:textSize="11sp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvTaskAudioName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@android:color/secondary_text_dark"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/tvTaskProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 / 0"
+            android:textSize="12sp"
+            android:textColor="@android:color/secondary_text_dark" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvTaskErrorMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@android:color/holo_red_dark"
+        android:visibility="gone"
+        android:layout_marginTop="2dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBarTask"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
+
+    <LinearLayout
+        android:id="@+id/llTaskActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="4dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnPause"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="暂停"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnRetry"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="重试"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnDownload"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="下载音频"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <!-- 「阅读并播放」已移除：合成结束后点**书籍行本身**即可进入
+             （BookListFragment.onShelfEntryClick / SearchFragment.onEntryClick）。
+             任务行只保留纯任务态操作：暂停/继续、重试、下载音频。 -->
+
+    </LinearLayout>
+
+</LinearLayout>

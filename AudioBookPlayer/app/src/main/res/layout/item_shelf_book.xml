@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="4dp">
+
+    <!-- 书籍行：图标 + 书名 + 删除 -->
+    <LinearLayout
+        android:id="@+id/bookRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/ivAudioIndicator"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_media_play"
+            android:contentDescription="有音频"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@android:id/text1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="16sp"
+            android:textColor="@android:color/primary_text_light"
+            android:ellipsize="end"
+            android:maxLines="2" />
+
+        <!-- 分类标签：点击可改分类（缺陷 #7） -->
+        <TextView
+            android:id="@+id/tvCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textSize="12sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/shelf_category_bg"
+            android:visibility="gone" />
+
+        <!-- 有声覆盖图徽章（Phase3 跨端）：本机有声/云端可下载/另一设备已合成三档，
+             由 ShelfAdapter 按 audio_coverage 缓存着色，不点击、纯感知。 -->
+        <TextView
+            android:id="@+id/tvCoverageBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:contentDescription="删除"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 该书关联的合成任务，每行一条，由 ShelfAdapter 动态填充。
+         marginTop 设为 0：原来这 2dp 是「书名行」与「任务行」之间的夹缝，
+         两边都不属于 → 点了没反应。改由任务行自己的 paddingTop 承担，
+         那 2dp 就落进任务行的可命中范围里了（见 item_shelf_task.xml）。 -->
+    <LinearLayout
+        android:id="@+id/taskContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>

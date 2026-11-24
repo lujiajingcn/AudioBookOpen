@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动页离场动画：轻微放大 + 淡出，配合 goMain() 里的
+  overridePendingTransition(0, R.anim.splash_exit)。
+
+  为什么是「放大」而不是「左滑」：启动图是整屏品牌画面，左滑会让画面整体平移，
+  暴露出后面的窗口背景；放大淡出则像是画面向观察者靠近后自然消散，
+  不会在过程中露出背景色，也不需要给新页面配入场动画（第二个参数传 0）。
+
+  320ms 是刻意的：再长会让「点了图标到看见主界面」的感知变慢。
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/accelerate_interpolator"
+    android:fillAfter="true">
+
+    <alpha
+        android:duration="320"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.0" />
+
+    <scale
+        android:duration="320"
+        android:fromXScale="1.0"
+        android:fromYScale="1.0"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:toXScale="1.06"
+        android:toYScale="1.06" />
+
+</set>

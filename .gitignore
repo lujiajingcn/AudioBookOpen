@@ -1,0 +1,117 @@
+.idea/
+AudioBookPlayer/java_pid12452.hprof
+AudioBookPlayer/java_pid12896.hprof
+AudioBookPlayer/java_pid5436.hprof
+AudioBookPlayer/java_pid7812.hprof
+AudioBookPlayer/local.properties
+AudioBookPlayer/.gradle/
+AudioBookPlayer/.idea/
+AudioBookPlayer/app/build/
+# 模块级 build 目录（gradle 的 reports/ 等，不入库）
+AudioBookPlayer/build/
+AudioBookServer/.idea/
+AudioBookServer/target/
+AudioBookServer/temp_audio/tts_20260721_102751_842.wav
+AudioBookWeb/node_modules
+AudioBookWeb/dist
+# vite build --outDir distbuild 的产物（emptyOutDir 被 safe-delete 拦，故建到独立目录）
+AudioBookWeb/distbuild
+AudioBookWeb/dist_build
+AudioBookWeb/dist_build/
+AudioBookPlayer/gradle/wrapper/gradle-wrapper.properties
+store_books
+.workbuddy
+.zcode
+uploads
+AudioBookPlayer/java_pid10284.hprof
+AudioBookPlayer/java_pid15008.hprof
+
+# 部署敏感配置
+AudioBookServer/.env
+*.hprof
+
+# Android 签名密钥：泄露等于别人可以冒名发布你的应用更新，绝不能入库。
+# 密钥本体与密码分别放在本地磁盘与（同样不入库的）local.properties。
+AudioBookPlayer/*.jks
+AudioBookPlayer/*.keystore
+
+# 本地调试 / 验证产物（uiautomator dump、模拟器验证截图、Gradle 构建日志）
+_ui_*.xml
+_shots/
+# 构建日志统一收口（build*.log / lint*.log …）：按后缀收，规则不用每次跟着新任务名改。
+AudioBookPlayer/*.log
+AudioBookPlayer/*.p12
+
+# 离线词典分发件（ECDICT 转换产物，23MB 二进制）：
+# 由 _dict_build/build_dict.py 生成、单独上传到服务器，不进版本库。
+# 词典源数据本身是 MIT 许可的公开词库，仓库里只保留**生成脚本**，
+# 需要时重跑脚本即可复现出字节级相同的产物（gzip 的 mtime 已固定为 0）。
+AudioBookServer/dicts/
+_dict_build/ecdict.csv
+_dict_build/lemma.en.txt
+_dict_build/dict.db
+_dict_build/dict.db.gz
+_dict_build/*.zip
+
+# 长按选词菜单的设备端验收产物（uiautomator dump + 报告，不入库）
+_lp_accept/
+
+AudioBookManager/node_modules
+AudioBookManager/dist
+
+# 构建/运行残留（不应入库）
+build_trash_*/
+vite.config.*.timestamp-*.mjs
+node_modules.broken-*/
+# 启动页素材的生成/预览/发布脚本与原始方图备份（本地工作目录，不入库）
+.tmp_splash/
+
+# 应用图标素材的生成/安装脚本与母版（本地工作目录，不入库）
+.tmp_icon/
+
+# 真机 / 模拟器验证产物（uiautomator dump、截图、拉回来的数据库副本，不入库）
+.tmp-verify/
+
+# 桌面端离屏渲染截图（tools/shoot_nav.py 的输出，本地验证用，不入库）
+AudioBookPlayerPC/agent_outputs/
+
+# 安卓启动图标源图（本地生成素材，与已入库的 assets/icons/*.png 无关）
+AudioBookPlayerPC/assets/icons/source/
+
+# 一次性对比用的临时脚本（_tmp_ 前缀，改完即弃，不入库）
+AudioBookPlayerPC/tools/_tmp_*.py
+
+# PC 端单测的临时目录（tests/ 里 tempfile.mkdtemp 建的本机库，不入库）。
+# ⚠️ Windows 上 tempfile 默认落在 %TEMP%，但当 TMPDIR 被指到工程目录时就会落在这儿
+#    ⇒ 一次全量测试能拉出几百个 tmpXXXXXXXX / abpc_* 目录把 git status 淹掉。
+AudioBookPlayerPC/tmp*/
+AudioBookPlayerPC/abpc_*/
+AudioBookPlayerPC/pip-unpack-*/
+AudioBookPlayerPC/_pc_cfg_test/
+
+# 端侧 MOSS-TTS-Nano 工作目录：模型权重（684 MB）与下载产物绝不入库。
+# 只保留脚本与参考向量（体积小、可复现），模型本身由 download_models.py 从 hf-mirror 拉取。
+#
+# ⚠️ 这个文件曾经被改坏过，教训写在这里：
+# 用 PowerShell 的 Get-Content -Raw / WriteAllText 编辑本文件时，
+# 中文 Windows 上会按 ANSI 读取 UTF-8，把中文注释变成乱码写回，
+# 并且丢掉一个换行，把「注释 + 规则」挤成同一行 ——
+# 那行以 # 开头，于是整行成为注释，**规则静默失效**。
+# 后果：.tmp_moss/moss_model/ 其实从未真正被忽略，
+# 一次 `git add .tmp_moss` 差点把 684 MB 模型权重提交上去。
+# 因此：每条规则必须独占一行；改完必须用 `git check-ignore -v <路径>` 验证真的生效。
+.tmp_moss/moss_model/
+.tmp_moss/dist/
+.tmp_moss/pylibs/
+.tmp_moss/*.wav
+.tmp_moss/*.part
+.tmp_moss/*.xml
+# 验证用的数据库副本与测试文本（本地临时产物，不入库）
+.tmp_moss/*.db
+.tmp_moss/*.db-wal
+.tmp_moss/*.db-shm
+.tmp_moss/*.sqlite
+.tmp_moss/bgtest.txt
+.tmp_moss/multiseg.txt
+.tmp_moss/shelfprog.txt
+.tmp_moss/pausetest.txt

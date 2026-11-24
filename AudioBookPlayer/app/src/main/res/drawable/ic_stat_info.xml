@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 外环（实心），用 evenOdd 抠出内圈形成环 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2 A10,10 0 1,0 12,22 A10,10 0 1,0 12,2 Z M12,4.2 A7.8,7.8 0 1,1 12,19.8 A7.8,7.8 0 1,1 12,4.2 Z" />
+    <!-- 信息点 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11,7.5 h2 v2 h-2 z" />
+    <!-- 信息竖条 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11,10.5 h2 v6.5 h-2 z" />
+</vector>

@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!--
+      用户信息区域：左侧欢迎语 + 右上角日/夜模式切换图标。
+
+      图标必须与欢迎语同一行：本页没有 Toolbar（MainActivity 只有 fragmentContainer
+      + 底部导航），页面顶部第一行就是这里 —— 所谓「右上角」只能是这一行的右侧。
+      所以这一行从裸 TextView 改成水平 LinearLayout，图标靠 weight 把欢迎语挤在左边。
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/tvUsername"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="欢迎，用户"
+            android:textSize="24sp" />
+
+        <!--
+          日间/夜间切换：图标显示**当前**模式（太阳=日间，月亮=夜间），点击即切到另一种。
+
+          tint 走 ?attr/colorOnSurface 而不是固定色值 —— 浅色主题得到深色图标、
+          夜间主题得到浅色图标（见 values-night/themes.xml 的 #E0E0E0），
+          两套配色共用一份 drawable，也不会出现「夜间模式里图标是深色、看不见」。
+          背景用无边界水波纹：涟漪按圆形扩散，不会在文字旁画出一个方块。
+        -->
+        <ImageButton
+            android:id="@+id/btnNightMode"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_light_mode"
+            app:tint="?attr/colorOnSurface"
+            android:contentDescription="切换到夜间模式" />
+    </LinearLayout>
+
+    <!--
+      积分：与下面「我的收藏 / 存储管理 / 参考音频管理 / 检查更新」**同一套行样式**
+      —— 同样的 padding 12dp、同样的图标 24dp、同样 16sp 的 ?attr/colorOnSurface 标题、
+      右侧同样 13sp 的次要色数值、同样的右箭头，整行可点。
+
+      改动前它是一张金色大卡片（大号数字 + 白色「充值中心」按钮），与下面的列表
+      风格割裂。这里把「数值」放到右侧次要位置（沿用 tvStorageUsage 那套写法），
+      原先独立的「充值中心」按钮取消 —— 整行点击即进充值页，与其它行「点整行进入」
+      的交互一致，不再需要第二个入口。
+
+      ⚠️ 原来这张卡片用的 @color/card_banner 随之不再被使用（见 colors.xml 注释）。
+    -->
+    <LinearLayout
+        android:id="@+id/rowCredits"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <!--
+          图标用自绘的 @drawable/ic_credits（叠放的钱币轮廓），不再复用
+          「我的收藏」那颗 @android:drawable/btn_star_big_on —— 两行图标一模一样时
+          在列表里分不出哪行是哪行。选线稿造型也是为了让它与实心星一眼可分。
+        -->
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_credits"
+            android:contentDescription="积分图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="我的积分"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvBalance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 积分"
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 功能入口列表 -->
+    <LinearLayout
+        android:id="@+id/btnMyFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/btn_star_big_on"
+            android:contentDescription="收藏图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="我的收藏"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+    </LinearLayout>
+
+    <!--
+  单词本入口：阅读页查词弹窗收藏的英文单词。
+  右侧 tvWordBookCount 显示收藏条数（0 时留空），与存储管理/词典行的右侧列同位。
+  用 ic_word_book（灰星，与弹窗未收藏态同一个图标），点进去是列表。
+-->
+    <LinearLayout
+        android:id="@+id/btnWordBook"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_word_book"
+            android:contentDescription="单词本图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="单词本"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvWordBookCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="" />
+
+    </LinearLayout>
+
+    <!-- 存储管理入口：查看/清理本地音频缓存 -->
+    <LinearLayout
+        android:id="@+id/btnStorageManage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_save"
+            android:contentDescription="存储图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="存储管理"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvStorageUsage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+    <!-- 参考音频管理入口：导入/删除本地参考音频，或从服务器共享库添加 -->
+    <LinearLayout
+        android:id="@+id/btnReferenceAudio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_lock_silent_mode"
+            android:contentDescription="参考音频图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="参考音频管理"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+    </LinearLayout>
+
+    <!--
+  离线词典入口（安装/卸载 ECDICT）。
+  右侧 tvDictState 显示状态：未安装 · 已安装 · 下载中 n% · 失败原因，
+  与 MOSS 模块行的 tvMossState 同位，保持整列右对齐一致。
+  未安装时「翻译」菜单会提示用户来这里下载（见 BookContentActivity.handleTranslate）。
+-->
+    <LinearLayout
+        android:id="@+id/btnDictionary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_search"
+            android:contentDescription="离线词典图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="离线词典"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvDictState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="未安装" />
+    </LinearLayout>
+
+    <!--
+      MOSS-TTS-Nano 本机合成模块入口。
+      右侧 tvMossState 显示状态文案（未安装 / 已安装 · 725 MB / 已加载），
+      与「检查更新」的版本号同位，保持整列右对齐一致。
+    -->
+    <LinearLayout
+        android:id="@+id/btnMossModule"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_voice_synth"
+            android:contentDescription="本机合成图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="本机语音合成"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvMossState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+    <!-- 检查更新：右侧显示当前版本号，点击向服务端查询新版本并下载安装 -->
+    <LinearLayout
+        android:id="@+id/btnCheckUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_upload"
+            android:contentDescription="更新图标"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="检查更新"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvCurrentVersion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+    <!--
+      这里原本有一张「显示与阅读」卡片（字体大小 SeekBar），已按需求移除。
+      字体大小仍可在**阅读页**调整：阅读页顶部菜单的「字号 A」会弹 dialog_font_size，
+      入口更贴近使用场景，因此本页不再重复放一份。
+      夜间模式不受影响：它在右上角图标（btnNightMode），与本卡片无关。
+    -->
+
+    <!-- 退出登录区域（放底部） -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="退出登录" />
+
+</LinearLayout>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  应用调色板（浅色主题）。夜间由 values-night/colors.xml 覆盖其中需要变暗的项。
+
+  ============================ 配色基调 ============================
+  全应用走**暖金**：主色金 + 暖米底 + 深棕文字，与启动页/应用图标同源
+  （启动页的暖米→暖金渐变见下面的 splash_* 一组）。
+
+  改动基调时请连带复核：
+    · values-night/colors.xml（夜间那套的对比度核算写在那个文件里）
+    · values-night/themes.xml 的 colorPrimary / colorPrimaryDark
+    · drawable/shelf_category_bg.xml、layout/item_shelf_task.xml、
+      layout/item_comment.xml、fragment_tts.xml 里语义色
+    · PostAdapter / ShelfAdapter 里 `holo_blue_dark` 一类的深色强调色
+  这些地方此前都按蓝系挑的颜色，只改本文件会剩下零星的蓝色。
+
+  对比度一律按 WCAG 2.1 实算，数值写在各项注释里；改色请重新核算后再改注释。
+-->
+<resources>
+    <!-- 「正在播放的那一行」的整行底色（drawable/item_highlight.xml 的 state_selected 引用它）。
+         原为 #80BBDEFB（50% 透明），浅色主题下与白底差异太小，几乎看不出是当前行。
+
+         ⚠️ 两个主题必须分开取值，别为了「一致」把它统一：
+           浅色主题正文是深色（colorOnSurface≈#212121），底色加深只会更清楚
+             —— 本值压在白底上合成 (242,224,190)，正文对比 12.41:1；
+           夜间主题正文是浅色（#E0E0E0，见 values-night/themes.xml），底色越深越压字
+             —— 所以夜间由 values-night/colors.xml 单独覆盖为低 alpha（合成后 9.05:1）。 -->
+    <color name="highlight">#F2E0BE</color>
+    <!-- 行内「正在读的那一句」的高亮。
+         整行选中底色用的也是 @color/highlight（见 drawable/item_highlight.xml），
+         这里若跟着用同一个颜色，高亮区间叠在同色底上等于看不见 ——
+         必须明确更深一档，才能看出读的是这一行里的哪一句。
+         本值压在整行底色上合成 (194,146,51)，正文对比 5.71:1；
+         与整行底色的亮度差 2.17:1，一眼能分出「这一行里的这一句」。 -->
+    <color name="highlight_sentence">#CCB37700</color>
+    <!-- R2-P2-17：书架条目多选高亮。原先这个颜色硬编码在 BookListAdapter 里
+         （0x223F51B5），随 setBackgroundColor 一起把水波纹覆盖掉了，现在提到资源里。
+         ⚠️ BookListAdapter 里还有一份等价硬编码，改色时两处要一起改。 -->
+    <color name="book_selected_highlight">#33B37700</color>
+
+    <!-- 书内搜索的命中底色（浅色主题）。
+         必须**跳出暖金系**：同一行上已经有两种金（整行 @color/highlight 米金、
+         句内 @color/highlight_sentence 深金），搜索命中再用金就分不出谁是谁。
+         这里用青碧 #14B8A6 @ 36%：压在白底上合成 (170,229,223)，
+         正文 #212121 压它的对比度 11.49:1（WCAG AA 要求 4.5）—— 底色够显眼，字也压得住。
+         与整行金底的区分 1.16:1（原蓝/琥珀方案是 1.12:1，同一量级）。
+         夜间由 values-night/colors.xml 单独覆盖。 -->
+    <color name="highlight_search">#5C14B8A6</color>
+
+    <!-- 「点读」模式下被点中的那个单词（第三层行内高亮，浅色主题）。
+         必须同时跳出暖金系与青碧系：同一行上已经有两种金（整行 @color/highlight
+         米金、句内 @color/highlight_sentence 深金）加青碧（搜索命中），
+         点选若再用金或青，会被直接误认成「正在读这一句」或「搜索命中」。
+         这里取紫罗兰 #8B5CF6 @ 32%：压在白底上合成 (218,203,252)，
+         正文 #212121 压它的对比度约 12:1（WCAG AA 要求 4.5）。
+         夜间由 values-night/colors.xml 单独覆盖（浅色版直接拿到夜间会晃眼）。 -->
+    <color name="highlight_point_read">#528B5CF6</color>
+
+    <!--
+      （已删除 card_banner）
+
+      它原本是「我的」页两张彩色卡片（积分卡、显示与阅读）的共用底色，
+      色值 #FFA8701A —— 为了在暖金主题下让白字达标，当时把它压到了 4.20:1
+      （原来的 #FFB74D 白字只有 1.73:1）。
+
+      两个使用者先后被移除：显示与阅读卡片（去掉该功能）、积分卡（改成与
+      「我的收藏 / 存储管理」一致的普通列表行，不再用彩色底）。删掉定义，
+      避免以后有人看到一个"没人用但看着像在用"的颜色又把它接回去。
+
+      若将来还想做彩色卡片，参考值：日间 #FFA8701A / 夜间 #FF4E3A1D
+      （夜间那份的对比度核算见 values-night/colors.xml 的历史注释）。
+    -->
+
+    <!-- ==================== 启动页（SplashActivity）配色 ====================
+         以下取值全部实测自启动图 res/drawable-nodpi/splash_screen.png 的对应位置，
+         取色点写在注释里。换图时必须同步复核，否则启动页底色与图之间会出现色带。 -->
+    <!-- 启动图顶沿背景色（图 y=0 左右边缘均值）—— 整屏渐变的第一站。
+         启动图顶部是「顶部对齐」放置的，这一站与图的上边缘同色，两者拼接看不出缝。 -->
+    <color name="splash_bg_top">#F9F4E0</color>
+    <!-- 启动图中段背景色（图 y≈0.45·H 处左右边缘均值） -->
+    <color name="splash_bg_mid">#F8EED6</color>
+    <!-- 启动图底沿背景色，同时充当底部纯色区与版本号区域的底色（图 y=H 左右边缘均值）。
+         高屏手机在竖屏下图片撑不满高度，上下会各留一条背景带，就是用它填的。 -->
+    <color name="splash_bottom">#F3CAA0</color>
+
+    <!-- 启动页主文字（版本号）：图中标题同款深棕。压 #F3CAA0 对比度约 6.0:1（WCAG AA 4.5） -->
+    <color name="splash_text_primary">#6B4A28</color>
+    <!-- 启动页次要文字（版权行）：比主文字浅一档，压 #F3CAA0 约 4.0:1（次要信息够用） -->
+    <color name="splash_text_secondary">#8E6138</color>
+
+    <!-- ==================== 主界面 ==================== -->
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- 主色（暖金）。压在它上面的白字/白图标（FAB、顶部栏）对比 4.90:1 —— 
+         顺带说明：改暖金之前的 #2196F3 只有 3.12:1，本值反而更清楚。 -->
+    <color name="primary">#A0630A</color>
+    <!-- 主色深一档：状态栏 / 渐变末端。白字压它 6.46:1 -->
+    <color name="primary_dark">#7A4A00</color>
+    <!-- 强调色：由原来的品红 #FF4081 改为暖赤陶，与金色主色同属暖色但能区分
+         （Material 用于输入框下划线、勾选框等强调态）。 -->
+    <color name="accent">#B3461A</color>
+    <!-- 页面底色：暖米白（原为中性 #F5F5F5）。正文 #212121 压它 14.97:1 -->
+    <color name="background">#FBF6EE</color>
+    <color name="primary_text">#212121</color>
+    <!-- 次要文字：原 #757575 压在暖米底上只有 4.28:1（低于 AA 4.5，是既有问题），
+         这里换成带一点暖调的 #6B5B4A，提到 6.06:1 —— 既修了可读性，也更配金色系。 -->
+    <color name="secondary_text">#6B5B4A</color>
+</resources>

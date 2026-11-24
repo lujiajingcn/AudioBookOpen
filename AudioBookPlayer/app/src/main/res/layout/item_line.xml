@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  阅读页的正文行。刻意只留一个 TextView：
+  · 左侧行号列已移除（阅读时不需要，且占掉 40dp 正文宽度）；
+  · 行内播放/暂停图标已移除，音频控制统一交给页面下方的 playbackControlBar
+    （上一段 / 播放暂停 / 下一段 / 定时 / 倍速）。
+  当前播放行仍由 item_highlight（state_selected）整行底色 + 句内更深底色标出。
+  水平 padding 由 8dp 提到 16dp：行号列消失后正文会顶到屏幕边缘，补一点留白。
+
+  ⚠️ 根节点的 descendantFocusability 不能用 blocksDescendants（9-02 起长按选词失效）：
+  它会在 ViewGroup.requestDescendantFocus() 里**无条件拒绝**整棵子树的焦点请求，
+  而 textIsSelectable 的选词必须先拿到焦点
+  （TextView 长按 → SelectionModifierController.startSelection() → mTextView.requestFocus()）
+  ⇒ 请求被拒 ⇒ SelectionModifierController 里的 startActionMode() 永不执行。
+  表现是「长按毫无反应」：不崩溃、不闪退、logcat 干净，只是 ActionMode 起不来，
+  **静态审查与 lint 全都看不出来**（属性合法、代码路径正确，只是运行时被父级拦死）。
+
+  这里用 afterDescendants：行内 TextView 仍可拿到焦点（长按选词 + 收藏可用），
+  但**只认触摸取焦**（focusableInTouchMode 默认为 false，需 tap 才会），不会一进页面就抢焦点、
+  影响 RecyclerView 滚动与首次点击。若改成 beforeDescendants 或彻底删掉属性，
+  键盘/方向键导航时焦点会在行间乱跳。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/item_highlight"
+    android:gravity="center_vertical"
+    android:descendantFocusability="afterDescendants">
+
+    <TextView
+        android:id="@+id/tv_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
+        android:textIsSelectable="true"
+        android:longClickable="true"
+        android:focusable="true" />
+</LinearLayout>

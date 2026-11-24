@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  阅读页左上角悬浮按钮（目录 / 逐段音色）的底：主题主色实心圆。
+  用 ?attr/colorPrimary 而不是写死 @color/primary —— 夜间主题会覆盖 colorPrimary，
+  写死就会在深色页面上留一块突兀的亮蓝。
+  图标用 android:tint="@android:color/white" 保持与旧顶部栏一致的白字观感。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="?attr/colorPrimary" />
+</shape>

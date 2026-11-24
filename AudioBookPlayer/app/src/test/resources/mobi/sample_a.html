@@ -1,0 +1,19 @@
+<html><head><title>测试</title>
+<style>body { color: red; }</style>
+<script>var x = 1 < 2;</script>
+</head><body>
+<h1>第一章 起风了</h1>
+<p>　　全角空格缩进的段落开始。这是一句很长的正文，用来触发回引压缩：这是一句很长的正文。</p>
+<p>&nbsp;半角空格开头的段落 &amp; 实体 &lt;尖括号&gt; &quot;引号&quot; &#34;再来&#34; &#39;单引号&#39; &#x4E2D;文中</p>
+<div>DIV 里的内容<br/>换行之后<br>再来一次</div>
+<h2>第二章 <span>带子标签<b>的</b>标题</span></h2>
+<ul><li>列表项一</li><li>列表项二</li></ul>
+<table><tr>表格行一</tr><tr>表格行二</tr></table>
+<h3>第三章 &amp; 实体标题（纯文本侧会被解码，故扫不到 → 覆盖「游标不推进」分支）</h3>
+<p>末尾段落，行尾故意留空格   </p>
+<p>
+
+
+连续空行之后   </p>
+<p>结束。</p>
+</body></html>

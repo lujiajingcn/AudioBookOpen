@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 书架页右上角「更多」菜单。原来顶部三个大按钮收拢到这里，
+         把首屏留给搜索/筛选和书籍列表。 -->
+
+    <!-- P2 #6：手动「立即同步」。进页自动同步是静默的（失败不打扰），
+         但用户想主动确认跨端数据是否对齐时需要一个显式入口 + 分级反馈。 -->
+    <item
+        android:id="@+id/action_sync_now"
+        android:title="🔄 立即同步" />
+
+    <item
+        android:id="@+id/action_tts"
+        android:title="🎤 语音合成" />
+
+    <item
+        android:id="@+id/action_import_ebook"
+        android:title="📚 导入电子书" />
+
+    <item
+        android:id="@+id/action_import_url"
+        android:title="🔗 链接导入" />
+
+</menu>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  「回到播放处」按钮图标：准星 / 定位靶（Material Icons `my_location`，Apache-2.0，24×24）。
+
+  ## 为什么是这个形状（2026-10-29 用图标替换按钮文字）
+  这个按钮原来的形态是一枚带文字的描边按钮（「回到播放处」六个字），在 28dp 高的
+  底栏里要吃掉 ~96dp 宽度，而它只在「正在朗读、且用户翻走了」这一种状态下才出现 ——
+  常驻的「定时 / 1.0x」反而更窄，视觉权重倒挂了。
+
+  换成图标后：
+  · 语义靠 `my_location` 承载 —— 全球通用「定位到当前位置」：地图的回到我的位置、
+    相册的回到当前照片、播放器的回到正在播放处，都是同一枚准星。读者不需要学习；
+  · 文字没有丢，降级成**长按提示**（Kotlin 侧 `TooltipCompat.setTooltipText`）
+    与无障碍描述（布局 `android:contentDescription`）。
+
+  为什么不用「播放三角」「喇叭」：那是**播放控制**语义，会被读成播放/暂停或音量；
+  这里的动作是「把正文滚回正在朗读的那一行」，本质是定位，不是播放。
+  也没有自己手绘组合图形 —— 16dp 下（底栏按钮 28dp 高，图标只给 16dp）
+  任何「三角 + 箭头」的组合都会糊成一团（本项目 ic_point_read.xml 也记过同一个教训）。
+
+  ## 路径来源
+  Google Material Icons 标准 `my_location`（`src/maps/my_location/materialicons/24px.svg`，
+  Apache-2.0），与本工程其它 Material 图标同源。落地前用 headless Chromium 渲染
+  24dp / 16dp 两档截图逐项核对：外圈、四向刻线、中心实心点齐全，16dp 下仍能分辨，
+  没有糊成实心圆。
+
+  ## 刻意不带 android:tint
+  与 ic_point_read.xml 同款做法：颜色交给控件侧的 `app:iconTint`
+  （M2 的 `materialButtonOutlinedStyle` 图标默认不继承文字色，不显式 tint 的话
+  这里写死的白色在浅色主题下就是白底白图标 —— 这是 MaterialButton 的取值规则，
+  不是猜的）。此处用 `@android:color/white` 只是占位基线。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 外圈准星环 + 四向刻线（x/y = 1..23 各 2dp 粗），中心一枚半径 4 的实心点 -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,8c-2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4 -1.79,-4 -4,-4zM20.94,11c-0.46,-4.17 -3.77,-7.48 -7.94,-7.94L13,1h-2v2.06C6.83,3.52 3.52,6.83 3.06,11L1,11v2h2.06c0.46,4.17 3.77,7.48 7.94,7.94L11,23h2v-2.06c4.17,-0.46 7.48,-3.77 7.94,-7.94L23,13v-2h-2.06zM12,19c-3.87,0 -7,-3.13 -7,-7s3.13,-7 7,-7 7,3.13 7,7 -3.13,7 -7,7z" />
+</vector>

@@ -1,0 +1,14 @@
+# AudioBookLocalTtsTool 运行依赖
+#
+# GUI
+PySide6>=6.6
+
+# MySQL 直连（本地库 / 服务器库都用它）
+PyMySQL>=1.1
+
+# PDF 正文提取（txt/md/epub 用标准库即可，pdf 需要它）
+pypdf>=4.0
+
+# 注意：MOSS-TTS-Nano 引擎的依赖（onnxruntime、numpy、sentencepiece 等）
+# 不在这里装 —— 引擎跑在**MOSS 工程自己的解释器**里（见 README「引擎环境」一节），
+# 由 tools/moss_bridge.py 在那个解释器下加载。工具主进程只负责调度与落库。

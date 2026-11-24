@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动页布局。
+
+  结构只有两层，几何全部交给 SplashArtworkView 自己算（见该类的注释）：
+    · SplashArtworkView —— 铺满全屏，等比绘制 res/drawable-nodpi/splash_screen.png
+      （1024x1280）。它负责：不变形、不裁主体、图片下沿的纯色淡出、
+      以及图片以下的底部纯色区。
+    · 底部 LinearLayout —— 版本号与版权两行文字，叠在那块纯色区上。
+
+  ⚠️ 不要改回 ImageView + scaleType="fitXY"：那正是原来图标被纵向拉长、
+  假状态栏 / 假手势条 / 作图工具水印跟着一起显示的原因（见 SplashArtworkView 注释）。
+
+  背景用 bg_splash_gradient.xml：它的第一站与启动图顶边同色，
+  图片在顶边溢出被裁时，接缝处看不出分界线，也不会有黑屏闪烁。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_splash_gradient">
+
+    <!-- 品牌图是纯装饰：对无障碍隐藏，避免 TalkBack 把它当成一个无名节点念出来。
+         真正有信息量的只有下面那两行文字。 -->
+    <com.audiobook.audiobookplayer.SplashArtworkView
+        android:id="@+id/splash_artwork"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no" />
+
+    <!--
+      底部文字区：两行都是「暖金底 + 深棕字」，对比度见 colors.xml 的注释。
+      两行放在同一个 LinearLayout 里而不是各摆各的，是为了它们始终作为一组居中，
+      且在用户系统级字体大小（设置 → 显示 → 字体大小）变化时不会各走各的。
+      注：App 内的阅读页正文字号（AppPrefs.reader_text_scale）**不影响**这里 ——
+      那条路径只量阅读页的正文 TextView，不再是曾经的全 App 缩放。
+    -->
+    <LinearLayout
+        android:id="@+id/splash_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="@dimen/splash_version_margin_bottom"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/splash_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.02"
+            android:textColor="@color/splash_text_primary"
+            android:textSize="13sp"
+            tools:text="版本号：V 1.14" />
+
+        <TextView
+            android:id="@+id/splash_copyright"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/splash_copyright"
+            android:textColor="@color/splash_text_secondary"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

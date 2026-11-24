@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@audiobook/shared": ["../AudioBookShared/src/index.ts"],
+      "@audiobook/shared/*": ["../AudioBookShared/src/*"],
+      "axios": ["./node_modules/axios"],
+      "dayjs": ["./node_modules/dayjs"],
+      "pinia": ["./node_modules/pinia"],
+      "vue": ["./node_modules/vue"],
+      "vue-router": ["./node_modules/vue-router"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

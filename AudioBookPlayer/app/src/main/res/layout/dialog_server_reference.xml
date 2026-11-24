@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  服务器共享参考音频选择弹窗的容器。
+
+  为什么不用 AlertDialog.setItems：
+  setItems 是一行纯文本，**没有位置放试听按钮**，而「只能看名字盲选」正是
+  2026-11-02 UI 走查 P2-3 的核心问题 —— 用户要判断的是"这个声音像不像我要的"，
+  名字根本回答不了。改成自定义视图：每行右侧一枚「试听」。
+
+  不套 ScrollView：AppCompat 的 AlertController 本来就把 custom panel 放进
+  自己的 scrollView 里，行数再多也能滚动；再套一层只会和它抢滚动手势。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/tvServerRefHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="点「试听」先听一段；点条目本身添加到我的参考音频库。"
+        android:textSize="12sp"
+        android:textColor="@android:color/secondary_text_dark"
+        android:paddingBottom="8dp" />
+
+    <LinearLayout
+        android:id="@+id/llServerRefItems"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+</LinearLayout>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 8.0（API 26）起的自适应图标。
+
+  为什么必须提供：模拟器（Android 17 / API 37）实测，Google 启动器会把**非自适应图标**
+  整个塞进白色圆底再缩小显示（同屏 Play Store / Gmail / Photos / YouTube 都是如此）。
+  只给传统 PNG 的话，新图标会比原来的蓝色满幅图标更小、更糊。
+
+  两层都是 108dp x 108dp：外围各 18dp 会被启动器的遮罩裁掉，只有中央 72dp 保证可见，
+  所以插图收在中央 62%（见 .tmp_icon/make_adaptive_layers.py 的 SAFE）。
+
+  传统图标（mipmap-*/ic_launcher.png，48dp 基准）继续保留，供 API 25 及以下使用。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  「单词本」收藏按钮图标：Material Symbols的 star（实心星，Apache-2.0，与本工程
+  其它 Material 图标同源），viewport 24×24。
+
+  两态用法（见 DictLookupSheet.bindFavoriteButton）：
+    · 未收藏 → ic_word_book（实心星、灰色）：表示「点一下可收藏」
+    · 已收藏 → ic_word_book_filled（实心星、琥珀色）：表示「已收藏」
+
+  ⚠️ **刻意不带 android:tint**：两态靠「换 drawable + 各自写死 fillColor」实现，
+  颜色直接画进各自的 path（灰 #9E9E9E / 琥珀 #FFC107），不用 selector。
+  若把 tint 写在这里，控件上的 app:tint 会覆盖 drawable 自带的，两态就做不出来
+  （同ic_point_read 的坑，见 detail#E6）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z" />
+</vector>

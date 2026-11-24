@@ -1,0 +1,39 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      应用主主题：使用 NoActionBar 变体，去掉系统默认的顶部 ActionBar
+      （原 DarkActionBar 会在每个页面顶端显示 android:label="有声伴读" 的标题栏）。
+      应用内所有页面均由布局自行组织顶部区域，不依赖 ActionBar；
+      AndroidManifest 中的 label 仍作为桌面图标下的应用名保留。
+    -->
+    <style name="Theme.AudioBookPlayer" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+    </style>
+
+    <!--
+      启动页（SplashActivity）专用主题。
+
+      要点：
+      1. 父主题用 NoActionBar，windowFullscreen 全屏，启动图不留白边；
+      2. **windowBackground 必须是暖色**。原来这里是白底，而启动图是暖米色，
+         冷启动的第一帧（Activity 还没 draw 出内容时）会先闪一下白，再切到暖色，
+         观感是「闪一下」；换成暖色后首帧与启动图同色，过渡是连续的。
+         【第一次冷启动最明显：桌面图标点下去的那一瞬间就是这一帧】
+      3. navigationBarColor 用暖色而非纯白，避免底部手势条区域与页面脱节。
+    -->
+    <style name="Theme.AudioBookPlayer.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/splash_bg_top</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/splash_bottom</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- 状态栏在 windowFullscreen 下不可见；这里声明浅色背景，
+             是为了万一被系统手势/刘海区域露出时图标是深色的，能压在暖底上 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+    </style>
+</resources>

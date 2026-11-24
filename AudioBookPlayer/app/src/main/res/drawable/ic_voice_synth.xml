@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  「本机语音合成」入口的左侧图标：喇叭 + 声波（自绘，viewport 24×24）。
+
+  ## 为什么需要单独做一个
+  这一行原先复用 `@android:drawable/ic_media_play` 当作左侧图标，
+  而**同一个图标也正是各记录右侧的"进入"指示符** ——
+  于是「本机语音合成」那一行会同时出现两个一模一样的播放三角，
+  既容易让用户以为左那个是"播放"按钮，视觉上也重复。
+  （其余各行的左侧图标都是各自语义的图标：积分、收藏、单词本、存储、参考音频、
+   词典、更新，唯独这一行借用了播放图标。）
+
+  ## 造型
+  左侧实心圆角矩形 = 喇叭箱体，右侧两道弧线 = 声波，
+  表达"发声/语音"而非"播放视频"。纯路径绘制，不依赖任何图标库。
+
+  颜色写死为中性灰 #9E9E9E，与 ic_word_book 等自绘图标保持一致口径
+  （不在这里写 android:tint，避免控件上的 tint 覆盖后语义色失效）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 喇叭箱体 -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M4,9h3l4,-3.5v13L7,15H4z" />
+
+    <!-- 内侧声波 -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M14.5,9.2a3.6,3.6 0 0,1 0,5.6l-1,-1.2a2.1,2.1 0 0,0 0,-3.2z" />
+
+    <!-- 外侧声波 -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M17.2,6.6a7.2,7.2 0 0,1 0,10.8l-1,-1.2a5.7,5.7 0 0,0 0,-8.4z" />
+
+</vector>

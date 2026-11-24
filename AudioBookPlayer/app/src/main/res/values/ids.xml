@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      R2-P2-21：ShelfAdapter 用它作为 View.setTag(int, Object) 的键，缓存任务行里
+      8 个子 View 的引用。setTag 的 int 重载要求传资源 id（不能用任意常量），
+      否则 lint 会报警告且跨版本行为不确定。
+    -->
+    <item name="tag_task_row_views" type="id" />
+    <!--
+      长按落点（行内字符下标）：LineAdapter 在 ACTION_DOWN/UP 时写进 TextView 的 tag，
+      「从此处读」据此从**用户手指按到的那一个字**开始念，而不是从选区起点
+      （选词器会把落点扩成整词/整句，起点比落点更早）。
+    -->
+    <item name="tag_long_press_offset" type="id" />
+</resources>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!--
+      三个并列入口：从手机导入 / 从服务器添加 / 录制。
+
+      ## 宽度策略：wrap_content + layout_weight=1（按内容比例分配，而非等分）
+      原先是 layout_weight=1 + width=0dp，即**三等分**：每个按钮固定约 110dp 宽，
+      而「从服务器添加」六个字在这个宽度下放不下 —— 当时的处理是加 maxLines=1 +
+      ellipsize=end 让它显示成「从服务器…」。那是把问题藏起来，不是解决：
+      用户看到的是一个语义不完整的入口。
+
+      现在改为 width=wrap_content + layout_weight=1：
+      · wrap_content 让每个按钮先按**自身文字所需宽度**参与测量，
+        「从服务器添加」自然拿到比「录制」更多的空间，文字能完整显示；
+      · 保留 layout_weight=1 是为了让三者仍**共同占满整行**——
+        若只写 wrap_content 而不带 weight，窄屏上三者宽度之和可能超过屏宽，
+        最右侧的按钮会被挤出屏幕（这比截断更糟，因为完全没有回退余地）。
+      即：空间富余时按内容比例分配，空间不足时仍会被压缩，
+      但此时各按钮的压缩比例与其内容长度成正比，短文字的按钮不会被无谓地压窄。
+
+      maxLines=1 保留：一行的三个按钮必须等高，任一个折成两行都会把整行撑高、高度参差。
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/btnImportLocal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="从手机导入"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:gravity="center"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnAddFromServer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="从服务器添加"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:gravity="center"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnRecord"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="录制"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:gravity="center"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="我的参考音频"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:background="@android:color/darker_gray" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerRefs"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="还没有参考音频\n可从手机导入，或从服务器共享库添加"
+        android:textSize="14sp"
+        android:textColor="@android:color/secondary_text_dark"
+        android:visibility="gone" />
+
+</LinearLayout>

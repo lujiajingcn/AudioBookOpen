@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  中文字典结果底部弹窗（查「一个汉字」的读音与释义）。
+
+  刻意沿用 sheet_dict_lookup.xml 的结构与主题色写法：
+  - 颜色一律走 ?attr / ?android:attr，**不写死颜色** ——
+    写死会在夜间模式下「深底深字」，白天看着正常、晚上字直接消失；
+  - 不套 ScrollView：BottomSheetDialog 自带可拖拽滚动容器，
+    再套一层会出现「内外两层都能滚、手势互相打架」。
+
+  与英文查词卡的三点差别：
+  1. 汉字比英文单词大得多（48sp），单独一行，不与拼音同行 ——
+     一个「听」占 48sp 加上拼音会把这行撑到接近全屏宽，挤在一起很别扭；
+  2. 拼音可能有多条（多音字），单独一行用「/」分隔；
+  3. 释义条数多（最长 1183 字符），给一个最大高度避免弹窗顶满全屏。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="20dp">
+
+    <!-- 汉字本体：单独一行，48sp（字典纸上的字就是这个量级） -->
+    <TextView
+        android:id="@+id/tvChar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="48sp"
+        android:textColor="?attr/colorPrimary" />
+
+    <!-- 拼音：多音字用「 / 」分隔；无拼音时整行 GONE -->
+    <TextView
+        android:id="@+id/tvPinyin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="16sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="10dp"
+        android:background="?android:attr/listDivider" />
+
+    <!--
+      释义容器：每条释义一个 TextView，由代码动态添加。
+      maxHeight 兜住「释义超长」的情况（最长的一个字有 1183 字符，
+      不设上限时弹窗会顶满全屏、把顶部标题挤没）。
+    -->
+    <LinearLayout
+        android:id="@+id/llDefinitions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:maxHeight="320dp" />
+
+    <!-- 兜底：字库里没有这个字 -->
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
+</LinearLayout>

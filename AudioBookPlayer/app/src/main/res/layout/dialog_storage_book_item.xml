@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 存储管理弹窗的书籍列表行（书名 + 占用大小，带点击反馈） -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:textColor="?android:attr/textColorPrimary"
+    android:textSize="16sp" />

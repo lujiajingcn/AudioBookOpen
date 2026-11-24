@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="逐段音色绑定"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="为每段选择预设音色；留空表示沿用克隆参考音频。修改后点「应用并重新合成」。"
+        android:textSize="12sp"
+        android:textColor="@android:color/secondary_text_dark"
+        android:layout_marginBottom="8dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- P1-1：这里必须用固定高度，不能用 0dp + weight。
+         父 LinearLayout 是 wrap_content（非 EXACTLY 模式），此时权重子 view 会被按
+         WRAP_CONTENT 测量，RecyclerView 拿到 UNSPECIFIED 高度后会把整本书几百上千段
+         一次性 measure/layout 完，弹窗打开卡数秒甚至 OOM。
+         而 maxHeight 对 RecyclerView 无效（只有 TextView/ImageView 等在 onMeasure 里读它），
+         所以直接写死 EXACTLY 高度，让 RecyclerView 只创建屏幕可见的那几个 ViewHolder。 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewVoices"
+        android:layout_width="match_parent"
+        android:layout_height="420dp" />
+
+    <Button
+        android:id="@+id/btnApplyVoices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="应用并重新合成"
+        android:layout_marginTop="8dp"
+        android:enabled="false" />
+</LinearLayout>

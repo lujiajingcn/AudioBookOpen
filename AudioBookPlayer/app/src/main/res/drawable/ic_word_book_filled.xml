@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  「单词本」收藏按钮的**已收藏**态：实心星、琥珀色（Material star，Apache-2.0）。
+
+  与 ic_word_book（未收藏态、灰色）是同一路径、不同 fillColor。两态靠换 drawable
+  实现，不靠 tint —— 理由见 ic_word_book.xml 顶部注释。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z" />
+</vector>

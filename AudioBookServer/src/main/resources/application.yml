@@ -1,0 +1,538 @@
+# ===== 应用基础配置（各环境通用）=====
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      # 单文件上限：与 /api/config 下发值、Controller 内 maxFileSizeBytes() 校验保持一致（前端 TtsSynthesis.vue 也读该值）
+      max-file-size: 50MB
+      # 请求总上限：需容纳 /synthesize 端点同时上传的「电子书(50MB)+参考音频(50MB)」再加余量，
+      # 否则合并请求会被容器层在 Controller 之前以 MaxUploadSizeExceededException 拒绝（前端只校验单文件 50MB，会出现不一致）
+      max-request-size: 120MB
+
+  mvc:
+    async:
+      # 「流式响应」的异步超时上限。不配 = 用容器默认值（Tomcat 30s），而本项目有多个
+      # 需要长时间写出的 StreamingResponseBody 端点：
+      #   GET /api/app/version/latest/apk   —— APK 下载（5.5MB 起）
+      #   GET /api/tts/segment/{id}/download、/api/tts/references/** —— 音频下载
+      #   GET /api/app/dict/download        —— 离线词典（23.1MB，最大的一处）
+      # 慢速客户端（手机移动网络）很容易把单次传输拖到 30s 以上，超时后容器会对
+      # 【已经提交、已经写出部分字节】的响应做错误重派发，结果是响应被从中掐断：
+      # 客户端拿到的是 HTTP 200 + 残缺 body，而 APK 装上去就报「解析软件包时出现问题」。
+      # 线上实测（nginx access.log 同一 URL）：200 却只有 42765 / 64837 / 1133797 / 2004197
+      # 字节，完整应为 5844649 —— 且这些请求的起始时刻恰好都是「结束时刻减 30s」。
+      # 15m 足以覆盖 5MB 级安装包在约 6KB/s 的极差链路上传完，同时仍然有上限。
+      request-timeout: ${MVC_ASYNC_REQUEST_TIMEOUT:15m}
+
+  datasource:
+    hikari:
+      # 连接泄漏检测：连接被借出超过该时长仍未归还，就打印【借用者】的完整堆栈。
+      # 线上出现过一次「MySQL 侧 10 条连接全部 Sleep 空闲、Hikari 却持续报
+      # Connection is not available」，导致所有接口 30s 后 500；重启才恢复。
+      # 仅告警、不改变任何行为，阈值取 60s 远大于本项目毫秒级的正常 DB 往返。
+      leak-detection-threshold: ${HIKARI_LEAK_DETECTION_THRESHOLD:60000}
+      # 池上限显式声明（Hikari 默认 10）。留出余量：一旦再出现少量长占用，
+      # 定时任务（TtsNodeRegistry 刷新快照、关闭超时订单）不至于一起失败，
+      # 从而不会把「某个入口把池占满」这个真正的问题点掩盖掉。
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:15}
+
+  jpa:
+    # 关闭 OSIV（Open EntityManager In View，Spring Boot 默认开启）。
+    # 本项目实体之间【没有任何关联注解】（@OneToMany/@ManyToOne/@OneToOne/
+    # @ManyToMany/@ElementCollection/@Embedded/@JoinColumn 全为 0 命中），
+    # 不存在「视图渲染阶段触发延迟加载」的需求，因此 OSIV 只有风险没有收益：
+    # 它把 EntityManager（进而底层 JDBC 连接）绑定到【整个请求生命周期】，
+    # 请求一旦走异步派发 / 错误重派发的异常收尾路径，连接就可能迟迟不归还。
+    # 关闭后每次仓储调用都在自己的事务内获取并释放连接，归还时机确定、可审计。
+    open-in-view: false
+    properties:
+      hibernate:
+        # 段落批量入库：一本书切出的段落可达数千条，逐条 INSERT 是数千次数据库往返。
+        # 配合 VoiceCloningTtsService.extractSegmentsForTask 的 saveAll 生效。
+        # 注意：AudioSegment 主键是 IDENTITY（MySQL 自增），Hibernate 需逐行取回自增 ID，
+        # 因此这里的收益主要是省掉逐条 save 的语句准备/往返开销，而非合并成单条多值 INSERT。
+        jdbc:
+          batch_size: 50
+        # 让 Hibernate 按实体类型与主键排序后再提交，尽量把同类语句聚成批次
+        order_inserts: true
+        order_updates: true
+  # 【刻意不设默认环境】必须由命令行 --spring.profiles.active=xxx 或环境变量
+  # SPRING_PROFILES_ACTIVE 显式指定 dev / prod。
+  #
+  # 原先这里写死 `spring.profiles.active: dev`，后果是「生产漏设 SPRING_PROFILES_ACTIVE」时
+  # 会静默按 dev 配置启动：
+  #   1) JWT 用仓库里公开的 dev 密钥（任何人可伪造任意用户、含 isAdmin claim 的 token）
+  #   2) app.payment.allow-mock=true（任何登录用户都能走模拟支付白拿充值积分）
+  #   3) ddl-auto=update（Hibernate 会按实体直接改生产库表结构）
+  # 去掉默认值后，缺少 profile 时数据源没有 url、jwt.secret 为空，启动立即失败（安全失败），
+  # 而不是带病运行。
+  #
+  # ⚠️ 必须**整段删除** `spring.profiles` 这个父键，而不是只把它下面的 `active: dev`
+  #    注释掉：父键保留、子键全被注释时该节点的值为 null，Spring Boot 3.2 会在
+  #    EnvironmentPostProcessor 阶段把它判为非法配置数据属性并直接抛
+  #    InvalidConfigDataPropertyException(`Property 'spring.profiles' ... is invalid and
+  #    should be replaced with 'spring.config.activate.on-profile'`) ⇒ 服务根本起不来。
+  #    这个坑单元测试抓不到（测试是纯 JUnit，不启动 Spring 上下文），
+  #    由 ApplicationYamlConfigTest 专门盯着。
+  #
+  # 本地开发：mvn spring-boot:run -Dspring-boot.run.profiles=dev（或在 IDEA 运行配置里指定 dev）
+  # 生产部署：systemd 的 EnvironmentFile 里显式设 SPRING_PROFILES_ACTIVE=prod
+  task:
+    scheduling:
+      # 定时任务线程数，默认 1。本项目有 3 个 @Scheduled 共用这个线程池：
+      #   1) CreditOrderService.closeExpiredOrders —— 关闭超时未支付订单（每 5 分钟）
+      #   2) TtsNodeRegistry.scheduledReload     —— 刷新合成节点快照（兜底，管理接口写入会立即刷新）
+      #   3) TtsLoadBalancer.probeAll            —— 对每台合成节点【串行】TCP 建连探活
+      # 单线程时三者互相排队：probeAll 一轮耗时 = 节点数 × health-check-timeout-millis
+      # （默认 2000ms），机器越多阻塞越久，前两个任务会被挤到后面，
+      # 表现为订单关得慢、节点快照刷新延迟。2 个线程即可让长耗时的探活不再阻塞它们。
+      # 调度线程名形如 scheduling-1 / scheduling-2（Spring Boot 默认前缀），
+      # 便于在 jstack 与日志里把定时任务和业务线程区分开。
+      pool:
+        size: 2
+
+# ===== MOSS-TTS-Nano 语音合成节点 =====
+# 多节点调度：可用的机器地址以数据库表 tts_nodes 为唯一真源，
+# 运行期通过管理后台 /api/admin/tts/nodes 增删启停，无需重启服务
+# （重启会截断 app.tts.concurrency 个正在合成的任务，这正是本改造要避免的）。
+moss:
+  tts:
+    # 仅作为首次部署的种子地址：tts_nodes 表为空时用它初始化第一台机器，
+    # 此后本配置不再参与调度 —— 改地址请在管理后台操作。
+    # 若该表已有记录，这里改了什么都不会生效（也不会被读取）。
+    url: http://localhost:18083/api/generate
+    # 预置音色 ID 在引擎请求中的字段名（引擎版本不同可能叫 spk/speaker）
+    #
+    # ⚠️ 线上 MOSS-TTS-Nano 节点用的是 **demo_id**，不是 voice_id。
+    #    引擎把「预置音色」叫做 demo（见其 assets/demo.jsonl，共 demo-1…demo-29），
+    #    传 voice_id 会被当成未知字段忽略，引擎随即报
+    #    `demo_id is required unless prompt speech is uploaded`（HTTP 400）。
+    #    换节点前请先用 curl 探一次 /api/generate 确认字段名。
+    voice-param: demo_id
+
+    # 预置音色清单（逗号分隔）：**必须是引擎 demo.jsonl 里真实存在的 demo_id**。
+    # 原值 xiaoyan,xiaoyu,aisjiuxu… 是云端 MOSS API 的音色 id，引擎侧不存在，
+    # 建任务时必然被引擎拒掉。
+    voices: demo-1,demo-2,demo-3,demo-4,demo-5,demo-6
+
+    # -------- 参考音频时长护栏（音色克隆素材）--------
+    # 引擎把参考音频编码成「每帧一行」的 prompt codes（约 12.5 帧/秒），
+    # 生成代价随 prompt 长度超线性增长。2 vCPU / 3.6 GB 上实测（max_new_frames 固定）：
+    #   30 s 参考音频 → 单请求 297 s，峰值内存撞 cgroup 上限被杀；
+    #   12 s 参考音频 → 单请求 15 s，峰值 2.5 GB，稳定回落。
+    # 因此参考音频在【入库前】就裁到本值以内，落盘即短：
+    # 既让引擎侧成本回到可控区间，也把逐段上传给节点的体积降一个量级
+    #（30 s 立体声 5.29 MB → 8 s 单声道约 0.7 MB，一本书数千段时差别是 GB 级流量）。
+    # 音色克隆不需要长素材，8 s 已足够稳定复刻音色；prompt 与生成帧数是相乘关系，
+    # 所以这条护栏和下面 frames 那条要一起看：单次请求的真实开销 = prompt × 帧数。
+    #
+    # 【不变式】本值必须 <= 节点侧的 MOSS_TTS_MAX_PROMPT_SECONDS（现为 12）。
+    # 否则节点护栏会先动手，而入库的长素材仍要逐段上传（护栏只省算力、不省流量）。
+    # <=0 关闭裁切（不建议：此时只能依赖节点侧护栏止损，每段仍要把整份长音频传上去）。
+    # 改动本值后，已入库的旧参考音频不会被自动重裁，需要重新上传才会生效。
+    reference-max-seconds: ${MOSS_TTS_REFERENCE_MAX_SECONDS:8}
+
+    # -------- 生成帧数（max_new_frames）--------
+    # 引擎默认 375 帧 ≈ 30 秒音频。而**每次请求的文本只有 ≤45 字**
+    # （TextSegmenter.DEFAULT_MAX_LENGTH；超长句已在 TextSegmenter.subPieces 里拆成小片，
+    #  所以这里的「一次请求」指的是一个小片，不是一条完整句子 ——
+    #  片段本身是完整句子，长度不限，可以几百字），
+    # 若不下发该字段，每次请求都会按 30 秒去生成，既慢又占内存（生成耗时随帧数增长）。
+    # 这里按文本长度显式下发，避免套用默认值。
+    #   帧数 = base + 字符数 × per-char，再夹到 [min, max]
+    # 换算依据：375 帧 ≈ 30 s → 12.5 帧/秒；中文朗读约 4~6 字/秒，
+    # 取 per-char=4.0（≈3.1 字/秒）是刻意保守的估计，宁可多给几帧也不截断句子。
+    # 45 字的小片算得 30 + 180 = 210 帧（≈16.8 s），尾片并入后最坏 48 字 ⇒ 222 帧，
+    # max=375 因此是够不到的天花板 —— 但它**不能删**：它兜的正是「整句直送引擎」这类改动
+    #（谁绕过 subPieces 把小片合回整句，85 字就要 370 帧、200 字必然被 375 截断）。
+    #
+    # min 从 60 降到 30：base=30 已经给每次请求 2.4 s 的起跳余量，再叠一个 min=60 会让
+    # 「嗯。」「走吧。」这类 1~2 字短句拿到 4.8 s 预算，引擎把预算用满 ⇒ 尾部生一大段无用静音，
+    # 段间停顿忽长忽短（与 app.tts.segment-envelope 的头尾整形是同一条问题的两个侧面）。
+    # min=30 时短句预算 = base(30) + 字符数×per-char，例如 2 字 → 38 帧 ≈ 3 s，仍远多于实际所需。
+    frames:
+      enabled: ${MOSS_TTS_FRAMES_ENABLED:true}
+      per-char: ${MOSS_TTS_FRAMES_PER_CHAR:4.0}
+      base: ${MOSS_TTS_FRAMES_BASE:30}
+      min: ${MOSS_TTS_FRAMES_MIN:30}
+      max: ${MOSS_TTS_FRAMES_MAX:375}
+
+    # 后台批量任务单段合成的超时上限（秒）。
+    # 该值必须高于「单段最坏耗时」，否则健康的请求会被超时杀掉、白烧算力：
+    # 改造前最坏耗时是 297 s（30 s 参考音频 + 375 帧），180 s 的默认值必然超时；
+    # 之后改成「参考音频 ≤ reference-max-seconds、帧数 ≤ frames.max」，实测最坏单段 15 s
+    # （那是 12 s prompt + 375 帧实测值）；现在 prompt 收到 8 s、送引擎的文本收到 45 字（≈210 帧），
+    # 两项都更小 ⇒ 真实最坏耗时严格低于 15 s，本上限的余量只会更宽。
+    # 节点侧串行执行（app_onnx.py 的 _execution_lock），叠加 app.tts.concurrency
+    # 个在途请求后的排队等待，最坏约 2×15=30 s。
+    # 故 180 s 已是该最坏值的 6 倍以上，无需再调大 —— 保持这个量级才有「节点卡死时快速失败」的价值。
+    timeout-seconds: ${MOSS_TTS_TIMEOUT_SECONDS:180}
+
+    # 同步接口（/clone、/synthesize）的超时上限（秒）。这两个端点会占住 Tomcat
+    # 工作线程直到返回，必须比后台任务短得多，超时即快速失败让线程回到池子里。
+    # 但不能短到 30 s：节点是**串行**执行的，交互式请求很可能排在某个批量段落后面，
+    # 排队 15 s + 自身 15 s 就已经顶到 30 s，表现为「偶发超时、重试又好了」。
+    # 60 s 足够覆盖「排在一个段落后面」的最坏情况，同时仍能及时释放线程。
+    sync-timeout-seconds: ${MOSS_TTS_SYNC_TIMEOUT_SECONDS:60}
+
+    # -------- 多节点调度参数 --------
+    nodes:
+      # 节点快照刷新间隔（毫秒）。这是兜底刷新，覆盖「绕过管理接口直接改数据库」
+      # 的修改；走管理接口的增删改会立即刷新快照，不受本值影响。
+      refresh-millis: ${MOSS_TTS_NODES_REFRESH_MILLIS:5000}
+      # 节点失败后的冷却时长（秒）：冷却期内不再分配新请求。
+      # 太短会让故障机器被反复砸中，太长会让一次短暂抖动的机器长时间闲置。
+      failure-cooldown-seconds: ${MOSS_TTS_NODES_FAILURE_COOLDOWN_SECONDS:30}
+      # 连续失败多少次进入冷却。连接被拒/域名解析失败这类「硬失败」会立即冷却，
+      # 不受该阈值约束（机器已明确不可达，没必要再浪费一次请求去确认）。
+      max-consecutive-failures: ${MOSS_TTS_NODES_MAX_CONSECUTIVE_FAILURES:2}
+      # 单次合成最多额外换几台机器重试；0 表示不换节点。
+      # 注意：超时永远不重试（原因见 VoiceCloningTtsService.isFailoverEligible）。
+      max-failover-attempts: ${MOSS_TTS_NODES_MAX_FAILOVER_ATTEMPTS:1}
+      # 主动探活：以 TCP 能否建连判断节点是否在线。
+      # 刻意不依赖引擎自身的健康检查端点 —— MOSS-TTS-Nano 不同版本暴露的路径不一致，
+      # 写死路径会在引擎升级后静默失效。
+      health-check-enabled: ${MOSS_TTS_NODES_HEALTH_CHECK_ENABLED:true}
+      health-check-interval-millis: ${MOSS_TTS_NODES_HEALTH_CHECK_INTERVAL_MILLIS:10000}
+      health-check-timeout-millis: ${MOSS_TTS_NODES_HEALTH_CHECK_TIMEOUT_MILLIS:2000}
+      # 所有节点都不可用时，批量合成「暂停等待恢复」的最长秒数。
+      #
+      # 为什么必须暂停而不是继续逐段往下跑：全部节点冷却时 candidates() 会降级为
+      # 半开探测并照常返回候选，于是每一段都会「连上就报错、立刻放弃」——
+      # 实测一次引擎重启的 5 秒窗口内，3 分钟就把 1450 段永久烧成 failed（每秒 8 段）。
+      # 暂停等待后，引擎一起床剩下的段落全都还能正常合成。
+      #
+      # 上限不宜过大：ttsTaskExecutor 的线程数等于 app.tts.concurrency（默认 2），
+      # 任务长期占着线程不放，新任务会被 AbortPolicy 直接拒绝、连队列都进不去。
+      wait-for-healthy-max-seconds: ${MOSS_TTS_NODES_WAIT_FOR_HEALTHY_MAX_SECONDS:180}
+      # 等待期间检查节点是否恢复的轮询间隔（毫秒）
+      wait-for-healthy-poll-millis: ${MOSS_TTS_NODES_WAIT_FOR_HEALTHY_POLL_MILLIS:2000}
+
+# ======================================================================
+# Pocket TTS（Kyutai pocket-tts）——非中文语料的第二套合成引擎（按书自动识别语言分流）
+# ======================================================================
+# 默认 enabled=false：合并本改动后行为与改造前逐字节一致，所有请求仍走 MOSS。
+# 只有当你真的起了一台 Pocket 节点、把开关打开、并配好 language-voices，才会开始分流。
+#
+# 节点登记：Pocket 节点与 MOSS 节点一样存于 tts_nodes 表，只是把它的 engine_type 设为 POCKET、
+#   url 指向 Pocket 的 /tts 端点（如 http://HOST:PORT/tts）。管理后台 /api/admin/tts/nodes 可填。
+#   选点按引擎类型隔离：MOSS 请求只会拿到 MOSS 节点，Pocket 请求只会拿到 Pocket 节点，互不串台。
+#
+# 语言路由（自动，无需人工选语言）：服务端在正文解析时对整本书识别一次语种，写入 tasks.language。
+#   逐段合成时据此选引擎——
+#     · 中文 / 识别不出(other) → MOSS（沿用用户选的 MOSS 音色）
+#     · Pocket 支持的 7 门拉丁语(英/法/德/西/意/葡/荷) 且 language-voices 里为该语种配了音色 → Pocket
+#     · 某语种可路由但 language-voices 没配 → 自动回落 MOSS（MOSS 自带多语音色），不发没音色的 Pocket
+pocket:
+  tts:
+    enabled: ${POCKET_TTS_ENABLED:false}
+    # Pocket 音色 id 清单：逗号分隔，每项 id 或 id:显示名。这里列出的是「Pocket 侧真实存在的音色」。
+    # 解析口径与 VoiceCloningTtsService/TtsTaskController 共用 PocketVoiceConfig，两处一致。
+    voices: ${POCKET_TTS_VOICES:}
+    # 语种 → Pocket 音色 映射：逗号分隔，每项 lang:voiceId。自动分流时按 tasks.language 反查此表，
+    # 决定下发给 Pocket 的 voice_url。voiceId 必须是上面 voices 里存在的音色 id；未列出的语种即使
+    # 命中可路由集合也会回落 MOSS。例（内置音色名以实际 pocket-tts 支持为准）：
+    #   language-voices: en:en-US_male,fr:fr-FR_male,de:de-DE_female,es:es-MX_male,it:it-IT_female
+    language-voices: ${POCKET_TTS_LANGUAGE_VOICES:}
+
+# JWT 签名密钥：一律通过环境变量 JWT_SECRET 注入，仓库内不再保留任何默认密钥
+# （旧默认密钥已提交进 git 历史，等同于公开，生产忘设环境变量即可伪造任意用户 token）。
+# 未设置时行为：dev profile 自带仅限本地开发的密钥；其余环境 JwtUtil 启动即报错失败。
+jwt:
+  secret: ${JWT_SECRET:}
+  expiration: 86400000
+
+# CORS（逗号分隔的允许来源；不允许通配符 "*"；为空时仅放行本地开发端口并打警告日志）
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001
+
+  # ===== 认证 Cookie（Web/管理后台凭据载体）=====
+  # 浏览器端 JWT 不再存 localStorage，改由服务端下发 HttpOnly Cookie，XSS 无法窃取。
+  # CSRF 依赖 SameSite=Lax + 严格 CORS 白名单防护。Android 端不走 Cookie，不受影响。
+  auth:
+    cookie:
+      name: AUTH_TOKEN
+      # Secure 属性：本地 http 开发必须为 false（浏览器不接受明文站的 Secure Cookie），
+      # 生产 https 环境应设为 true（application-prod.yml 已默认 true）
+      secure: ${AUTH_COOKIE_SECURE:false}
+      same-site: Lax
+    # I-04：认证过滤器用户快照缓存的存活时长（毫秒）。封禁/改密的生效最多延迟该时长，
+    # 对安全极不敏感且追求零延迟的环境可设为 0（禁用缓存，退回每请求查库）。
+    user-cache-ttl-millis: ${AUTH_USER_CACHE_TTL_MILLIS:2000}
+
+  # TTS 异步执行
+  tts:
+    # 同时合成的任务数（其余任务排队等待），机器/显卡撑得住可调大。
+    #
+    # ⚠️ 多节点必读：这是【全局】在途合成请求的上限，与部署了几台 MOSS-TTS-Nano
+    # 无关。配了 3 台机器但仍保持 concurrency=2，就永远只有 2 台同时干活，
+    # 第 3 台完全闲置 —— 表现上「加了机器但一点没变快」。
+    # 加机器时请同步把这个值提上去（经验值：节点数 × 每台可承受的并发），
+    # 并按实际显存/CPU 与单段耗时压测确认，不要凭节点数直接线性放大。
+    # 管理端 /api/admin/tts/nodes 会在两者不匹配时给出提示。
+    concurrency: ${APP_TTS_CONCURRENCY:2}
+    # 排队上限
+    queue-capacity: 200
+    # 是否允许「仅预设音色」合成（demo_id 通道：不下发 prompt_audio）。
+    #
+    # 线上 MOSS-TTS-Nano 节点**支持**这条通道：实测只发 text + demo_id（不带
+    # prompt_audio）返回 200 与完整 WAV（demo_id=demo-1，约 937 KB）。
+    # 同时带 prompt_audio + demo_id 也正常（引擎以参考音频为准），所以开启本开关
+    # 不会影响克隆路径 —— 实测两者都出了声（675 KB / 645 KB WAV）。
+    #
+    # false 时在**建任务阶段**就拒绝「仅预设音色」并提示改用参考音频，
+    # 适用于「节点把 prompt_audio 当必填」的老引擎。
+    # 逐段绑定预设音色（segment_voices）走同一条通道，受同一个开关控制。
+    voice-only:
+      enabled: ${APP_TTS_VOICE_ONLY_ENABLED:true}
+    # 单段合成平均耗时（秒），用于前端预估总耗时/剩余时间，可按实际引擎速度调整
+    avg-segment-seconds: 8
+    # 多片拼接时、每个接缝单侧的淡出/淡入时长（毫秒）；<=0 关闭。
+    #
+    # 只影响「一个句子超过 45 字 ⇒ 拆成多个小片分别合成」的情形：那些小片是各自独立
+    # 生成的波形，首尾相贴时若前片末帧与后片首帧之间没有共同的近似零点，就会带出一声「啪」。
+    # 实测小片本身多带 ~50 ms 首尾静音（引擎停笔后波形自然衰减），接缝一般落在静音里；
+    # 但抽样 10 段确有 2 段尾静音为 0，所以做这道保险。
+    # 10~20 ms 是有用区间：更短压不住半周期的阶跃，更长会被听成一次可辨的音量凹陷。
+    # 【只淡接缝，不削首尾】整段的第 1 帧与最后一帧由下方 segment-envelope 负责。
+    # 设 0 即关闭，输出与改造前逐字节一致，可用于 A/B 对比。
+    joint-fade-millis: ${APP_TTS_JOINT_FADE_MILLIS:15}
+    # -------- 段级包络整形（WavEnvelope）--------
+    # 每段音频在转 MP3 之前走一遍「裁头尾静音 → 端点淡化 → 头尾统一补齐」。
+    #
+    # 为什么必须有：MOSS-TTS 每句都是**独立冷启动**合成，段与段之间没有任何跨句上下文，
+    # 引擎自己给的头尾静音长度**不一致**（WavConcat 注释里的抽样：10 段有 2 段尾静音为 0），
+    # 直接后果就是用户抱怨的「一句话开始和结束的很突兀」：
+    #   - 末帧为非零采样 ⇒ 编成 MP3 播放器一响就是「啪」；
+    #   - 段间停顿忽长忽短（0~几百 ms），叠加 MP3 编码器每段独立的 priming/padding（~26 ms），
+    #     听感就是「顿一下、又顿一下」。
+    # 补齐的头尾静音还有一个副作用是好的：MP3 priming/padding 落在静音里，客户端即使不做
+    # gapless 播放也听不到拼接痕迹。
+    #
+    # 【作用范围】只影响新任务的段音频；已入库的旧任务 MP3 已经在盘上，不受影响。
+    # 【默认关闭】2026-10-13 线上验收：关掉本项（以及已删除的滚动 prompt）后音质达标。
+    # 与子句接缝整形（subclause.join）叠加时，本项给段尾补的 150 ms 会把「按标点算好的
+    # 停顿」再拉长一次，节奏反而被拉平。代码保留 —— 它是通用后处理工具，换引擎时可能
+    # 还有用，但**不要再默认打开**。
+    # enabled=false 即透传（输出与改造前逐字节一致，用于 A/B 对比）。
+    segment-envelope:
+      enabled: ${APP_TTS_SEGMENT_ENVELOPE_ENABLED:false}
+      # 静音判定的采样绝对值阈值。16 bit PCM 满幅 32767，300 ≈ -40 dBFS：
+      # 高于本底噪声、又低于任何轻辅音的能量下限。<=0 关闭裁剪。
+      trim-threshold: ${APP_TTS_SEGMENT_TRIM_THRESHOLD:300}
+      # 裁剪后头部保留的自然呼吸（毫秒）。裁到 0 会让首字听起来被切掉；30 ms 是听感下限。
+      head-keep-millis: ${APP_TTS_SEGMENT_HEAD_KEEP_MILLIS:30}
+      # 裁剪后尾部保留的自然呼吸（毫秒）。尾字收音需要更长余量，80 ms ≈ 一次自然停顿。
+      tail-keep-millis: ${APP_TTS_SEGMENT_TAIL_KEEP_MILLIS:80}
+      # 头部统一补齐的静音长度（毫秒）。让所有段以等长静音起头 —— MP3 priming 落在这里就听不见。
+      lead-millis: ${APP_TTS_SEGMENT_LEAD_MILLIS:40}
+      # 尾部统一补齐的静音长度（毫秒）。决定段间停顿的**基准**长度 —— 150 ms ≈ 一次自然句读，
+      # 是「忽长忽短」的直接对治。想更快节奏可下调到 100 ms，想更慢可上调到 200~250 ms。
+      tail-millis: ${APP_TTS_SEGMENT_TAIL_MILLIS:150}
+      # 首端淡入时长（毫秒）。5 ms 足以把首帧非零采样抹平；再长会让首字音量明显偏低。
+      fade-in-millis: ${APP_TTS_SEGMENT_FADE_IN_MILLIS:5}
+      # 末端淡出时长（毫秒）。与 joint-fade-millis 同量级，理由见该项注释。
+      fade-out-millis: ${APP_TTS_SEGMENT_FADE_OUT_MILLIS:15}
+
+    # -------- 句内子句一致性（治「一个句子里各子句的语调、节奏不一致」）--------
+    #
+    # 【问题】片段 = 完整句子（一条 audio_segments / 一个 mp3），但引擎单次只吃得下 45 字，
+    # 超长句要拆成若干「子句」分别合成再拼回一条音频。这 k 次合成是 k 次**互不相干的生成**：
+    #   - 节奏：每片自带的头尾静音长度随机（0~几百 ms），改造前只对拼接后的整段裁一次，
+    #           每片的静音原样叠加在接缝上 ⇒ 同一句话里停顿忽长忽短
+    #           （实测拆片段停顿数中位 23 / 未拆片段 7）；
+    #   - 音量：节点不做响度归一化，同一句话的两片可以差好几个 dB。
+    #
+    # 【做法】subclause.join：每片进拼接前先裁掉多余头尾静音，再按**片尾标点**插入等长停顿，
+    # 并把各片有效发声 RMS 拉到同一水平，最后才交给 WavConcat 做接缝淡化。
+    #
+    # 原先还有 subclause.prosody（第 2 片起用上一片的尾巴做 prompt_audio）——
+    # 2026-10-17 真机 12 组配对实测：片 2 开头音高与片 1 结尾音高相关系数 r=0.00，
+    # 引擎不经 prompt_audio 传韵律，接缝响度差反而 +1.07 dB，已随滚动 prompt 一并删除。
+    #
+    # 【作用范围】只影响「一句话超过 45 字 ⇒ 拆片」的那些段；单片的句子不走接缝整形。
+    # 【关闭方式】enabled=false 即与改造前逐字节一致（A/B 对比用）。
+    subclause:
+      join:
+        enabled: ${APP_TTS_SUBCLAUSE_JOIN_ENABLED:true}
+        # 子句级静音判定阈值（采样绝对值）。300 ≈ -40 dBFS，与段级 envelope 同口径。
+        trim-threshold: ${APP_TTS_SUBCLAUSE_TRIM_THRESHOLD:300}
+        # 裁剪后头部保留的自然呼吸（毫秒）。片段开头多是接续上一片的语气词，留一点免得切掉起音。
+        head-keep-millis: ${APP_TTS_SUBCLAUSE_HEAD_KEEP_MILLIS:25}
+        # 裁剪后尾部保留的自然呼吸（毫秒）。真正的句读长度由下面四个 pause 统一决定，
+        # 这里只留「尾字收音」的余量 —— 两处都留长会变成「随机值 + 固定值」，节奏依旧不齐。
+        tail-keep-millis: ${APP_TTS_SUBCLAUSE_TAIL_KEEP_MILLIS:60}
+        # 「，」后的停顿（毫秒）。中文朗读的逗号停顿约 150~250 ms；
+        # 叠加头尾保留（60+25 ms）后总间隔约 215 ms，落在自然区间内。
+        comma-pause-millis: ${APP_TTS_SUBCLAUSE_COMMA_PAUSE_MILLIS:260}
+        # 「、」后的停顿（毫秒）。顿号是并列项之间最短的停顿：够分辨「甲、乙」，又不至于念成两句。
+        enumeration-pause-millis: ${APP_TTS_SUBCLAUSE_ENUMERATION_PAUSE_MILLIS:70}
+        # 「；」「：」后的停顿（毫秒）。句内最强的停顿 —— 要让「分句」听起来是分句、不是句号。
+        strong-pause-millis: ${APP_TTS_SUBCLAUSE_STRONG_PAUSE_MILLIS:300}
+        # 硬切（片尾不是任何停顿标点）时的停顿（毫秒）。此时切点落在词中间，
+        # 加停顿只会把词劈得更明显，故取小值（几乎是纯接缝淡化，不额外加静音）。
+        hard-cut-pause-millis: ${APP_TTS_SUBCLAUSE_HARD_CUT_PAUSE_MILLIS:40}
+        # 是否做响度对齐（把每片的有效发声 RMS 拉到各片中位数）。
+        loudness-match: ${APP_TTS_SUBCLAUSE_LOUDNESS_MATCH:true}
+        # 单片响度增益上限（±dB）。差超过 6 dB 通常是引擎异常（截断/混噪/静音），
+        # 硬拉会引入可闻失真与齿音 —— 宁可保留差异让人听得出异常。
+        loudness-max-gain-db: ${APP_TTS_SUBCLAUSE_LOUDNESS_MAX_GAIN_DB:6}
+        # -------- 片内停顿封顶（真机数据决定的一项）--------
+        # 在 tts-node.example.com 上用真实长句实测：MOSS-TTS-Nano 在逗号处会插 0.7~2.0 s 静音
+        # （同一句里既有 141 ms，也有 1959 ms）。而一片最多 45 字 ⇒ 这些"巨停顿"绝大多数落在
+        # 片**内部**，上面的接缝停顿完全管不到 —— 不处理的话，同一句里仍会出现
+        # 「逗号停 0.2 s、逗号停 1.9 s」的节奏跳变，这正是用户说的"节奏不一致"。
+        # 处理方式是「封顶」而不是「统一改写」：短停顿（150~300 ms）是正常句读呼吸，保留；
+        # 只把明显异常的巨停顿压到上限。
+        # 低于 min 的静音是塞音闭塞/换气缝隙 —— 动了会把字咬碎，这是唯一不能商量的约束。
+        internal-pause-min-millis: ${APP_TTS_SUBCLAUSE_INTERNAL_PAUSE_MIN_MILLIS:220}
+        # 片内停顿上限（毫秒）。必须 > internal-pause-min-millis 才有意义；配 0 即关闭本项。
+        internal-pause-cap-millis: ${APP_TTS_SUBCLAUSE_INTERNAL_PAUSE_CAP_MILLIS:380}
+    # 启动时自动恢复 pending/queued/processing 状态的历史任务（断点续跑）
+    recover-on-startup: true
+    # 单次启动最多恢复的任务数。线程池已改为 AbortPolicy：恢复派发超队列容量只会被
+    # 拒绝并记日志，不会再阻塞启动线程，因此与 queue-capacity 对齐即可一次性恢复全部积压。
+    recover-max: 200
+    # 是否把「已落 partial 终态、但仍有未合成片段」的任务也纳入启动恢复。
+    # 合成节点故障中断会留下这种任务（已完成一部分、剩余段仍是 pending），
+    # 那批剩余段本该被继续合成，只靠用户手动点重试补完太容易漏。
+    # 判定条件是「该任务是否真的有 pending 片段」，天然自限：某段的失败一旦被固化
+    # （状态由 pending 变成 failed），下次启动就不会再命中，不存在无限重跑。
+    recover-partial: ${APP_TTS_RECOVER_PARTIAL:true}
+    # 单段失败重试的退避序列（秒，逗号分隔），长度即「最多重试几次」。
+    # 引擎被 cgroup OOM 杀掉后 systemd 5 秒内就会把它拉起来，但这 5 秒里正在处理的
+    # 那一段会以「连接提前关闭」失败、紧随其后的若干段以「连接被拒」失败。
+    # 没有这一层重试时，这些段落会被直接标成 failed 永久定格 ——
+    # 一次 5 秒的引擎重启，就这样变成一本书 1450 段永久缺失（实测 taskId=337）。
+    # 只重试「重发可能成功」的错误（超时/5xx/429/连接类）；4xx 与音频解析失败不重试。
+    # 配成空串即关闭段级重试，回到「失败即定死」的旧行为。
+    segment-retry:
+      backoff-seconds: ${APP_TTS_SEGMENT_RETRY_BACKOFF_SECONDS:5,15,30}
+
+  # 登录/注册接口限流（防止暴力破解）；同步 TTS 合成接口限流（防止算力被刷爆）
+  #
+  # 计数语义有两类，改阈值前先看清是哪一类：
+  #   - login / register = 【失败次数】。请求成功后 RateLimitFilter 会退还本次占用
+  #     （ratelimit_release.lua），所以正常登录/注册永远不消耗额度，
+  #     只有失败的尝试在累积。这两个阈值就是「N 次失败/窗口」。
+  #   - tts / tts-upload / posts = 【请求次数】。每次调用都真实消耗算力或存储，
+  #     成功同样占配额，不退还。
+  rate-limit:
+    # 注意：限流服务在 Redis 异常时 fail-closed（一律拒绝）。该语义已覆盖
+    # 登录/注册/TTS 合成/参考音频上传全部受限路径——Redis 故障期间这些接口整体 429，
+    # 相当于合成与上传能力全停，运维排障时请优先检查 Redis。
+    #
+    # 被限流的路径（正则，须 ^...$ 全锚定）。与 RateLimitFilter 内置默认值保持一致
+    #（登录/注册 + 同步 TTS 合成 + 参考音频上传 + 任务目录提取 + 发帖 posts）。
+    # ⚠️ 新增重型端点（同步调用引擎 / ffmpeg 转码 / 大文件读取等）务必在此追加，
+    # 否则新接口完全不受限流保护。正则非法时应用启动即失败。
+    # 注意：若通过环境变量 RATE_LIMIT_LIMITED_PATHS 整体覆盖本正则，需自行在其中补上 `|posts`，
+    # 否则发帖接口不受限流保护（内置默认值已含 posts）。
+    #
+    # task/\d+/toc（S-5）：该接口对 PDF 逐页跑 PDFTextStripper、EPUB 整包解压，
+    # 50MB 文件可达分钟级，跑在 HTTP 线程上且原先不在限流范围内，属于低成本打满线程池的入口。
+    # tts/extract-content 与 store/book/{id}/content 同属这一类：都对整本 PDF/EPUB 做同步解析、
+    # 跑在 Tomcat 业务线程上，原先却不在限流范围内（已归入下方 else 分支的 TTS 同步配额）。
+    limited-paths: '${RATE_LIMIT_LIMITED_PATHS:^/api/(auth/(login|register)|tts/(clone|synthesize|extract-content|upload-reference|references(/\d+/update)?|task/\d+/toc)|store/book/\d+/content|posts|app/dict/download)$}'
+    login:
+      # 【失败次数】10 次/60 秒。
+      # 语义：请求成功会退还本次占用（RateLimitFilter 在 doFilter 后按 status<400 退还），
+      # 所以正常登录（哪怕一分钟内登出再登、切换账号）永不消耗额度；
+      # 只有失败的尝试才累积，连续错 10 次密码/60 秒才会撞 429。
+      # 该语义正是为修掉「成功登录也吃配额 → 密码是对的却被 429」这个缺陷。
+      #
+      # ⚠️ 阈值不宜再放宽：登录失败**没有**自动封禁机制（User.bannedUntil 只能由
+      # 管理员在后台手动设置，AuthService 不会因连续失败而封号），
+      # 所以这条 IP 限流就是暴力破解的唯一防线。
+      #
+      # ⚠️ 已知残余风险：成功请求不计数 ⇒ 持有正确凭据的人可以无限刷这个接口
+      # （每次约一次 BCrypt 校验的开销）。这是「失败次数」语义的固有代价，
+      # 如需收紧，方向是另加一道「总请求数」硬上限，而不是回退本语义。
+      max-attempts: 10
+      window-seconds: 60
+    register:
+      # 【失败次数】3 次/60 秒，同样成功退还。注册失败多为「用户名已存在 /
+      # 密码太弱」，用户会立刻改了重试，按失败计数才不会把正常用户锁在外面。
+      max-attempts: 3
+      window-seconds: 60
+    # /api/tts/clone 与 /api/tts/synthesize 共用配额：两者都同步阻塞调用上游引擎，
+    # 不限流时任何客户端循环调用就能占满 Tomcat 线程池并打满 TTS 引擎。
+    tts:
+      max-attempts: ${RATE_LIMIT_TTS_MAX_ATTEMPTS:10}
+      window-seconds: ${RATE_LIMIT_TTS_WINDOW_SECONDS:60}
+    # 参考音频上传（upload-reference/references，含最长 120s 的视频转码）独立配额，
+    # 与合成配额分开计数，避免上传几个参考音频就耗尽自己的合成次数。
+    tts-upload:
+      max-attempts: ${RATE_LIMIT_TTS_UPLOAD_MAX_ATTEMPTS:20}
+      window-seconds: ${RATE_LIMIT_TTS_UPLOAD_WINDOW_SECONDS:60}
+    # 发现页发帖（POST /api/posts）独立配额：发帖是写库 + 建索引的写入口，
+    # 若不限制，任何登录用户都能零成本循环灌水打满数据库写入。仅 POST 受限，GET 列表读不受限。
+    posts:
+      max-attempts: ${RATE_LIMIT_POSTS_MAX_ATTEMPTS:10}
+      window-seconds: ${RATE_LIMIT_POSTS_WINDOW_SECONDS:60}
+    # 离线词典下载（GET /api/app/dict/download，23.1MB）独立配额。
+    # 该端点**免鉴权**（本地读书也要能装词典），任何人都能并发拉大文件；
+    # 无限流会打满带宽并长时间占住 Tomcat 异步线程池（StreamingResponseBody 默认 8 线程）。
+    # 阈值比 TTS 宽：客户端一次续传只发 1 个请求，但要给弱网反复重试留余量。
+    dict:
+      max-attempts: ${RATE_LIMIT_DICT_MAX_ATTEMPTS:20}
+      window-seconds: ${RATE_LIMIT_DICT_WINDOW_SECONDS:60}
+    # 可信反向代理白名单（逗号分隔的 IP/CIDR）。只有请求的 TCP 直连来源在这里时，
+    # 才会解析 X-Forwarded-For/X-Real-IP 还原真实客户端 IP；否则一律按直连地址限流。
+    # 留空 = 不信任任何转发头（直连部署时这就是正确配置）。
+    # 放在 Nginx 后面时配置为代理地址，如：127.0.0.1,10.0.0.0/8
+    trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:}
+
+  # ===== 磁盘配额 =====
+  # 每个任务都会在 uploads/ 下落一份电子书源文件并生成 uploads/{taskId}/ 音频目录，
+  # 单个账号不加限制地建任务会让磁盘无限累积。这里限制单用户【未完成】任务数
+  # （pending/queued/processing），完成后即可删除旧任务腾出额度。<=0 表示不限制。
+  quota:
+    max-unfinished-tasks-per-user: ${QUOTA_MAX_UNFINISHED_TASKS_PER_USER:10}
+
+  # ===== 离线英汉词典（ECDICT）=====
+  # 目录里应放两份由 _dict_build/build_dict.py 产出的文件：
+  #   dict.db.gz   —— 分发件（gzip 压缩的 SQLite，23.1MB），客户端下载后自行解压
+  #   dict.meta    —— key=value 元信息（version/downloadMd5/downloadName/rows/license）
+  # ⚠️ 该目录**不入 version控制**（23MB 二进制），部署时单独上传；
+  #    缺失时 /api/app/dict/info 返回 available=false，客户端把下载按钮置灰而非报错。
+  # ⭐ 刻意**不放在 uploads/ 下**：uploads 是任务目录的父目录，清理任务时会被遍历，
+  #    词典是长期共享的静态资源，不能跟着任务清理一起消失。
+  dict:
+    dir: ${DICT_DIR:dicts}
+
+  # ===== 积分充值支付网关 =====
+  # 所有密钥一律走环境变量注入，禁止把商户私钥明文提交进仓库。
+  # 未注入密钥时对应渠道的 isConfigured() 为 false，下单会自动降级到 MOCK 模拟支付，
+  # 保证本地开发无需商户资质也能跑通「充值 -> 到账 -> 扣费」全链路。
+  payment:
+    # 支付平台异步通知的回调根地址，必须是支付平台服务器能访问到的公网地址。
+    # 本地联调需内网穿透（如 ngrok），填 localhost 的话回调永远收不到。
+    notify-base-url: ${PAY_NOTIFY_BASE_URL:http://localhost:8080}
+    # 支付宝网页支付完成后浏览器跳回的前端页面
+    return-url: ${PAY_RETURN_URL:http://localhost:3000/credits}
+    # 未支付订单自动关闭时长（分钟）
+    order-expire-minutes: ${PAY_ORDER_EXPIRE_MINUTES:30}
+    # 是否允许模拟支付。生产环境必须设为 false，否则登录用户可凭模拟支付接口白拿积分。
+    allow-mock: ${PAY_ALLOW_MOCK:false}
+    alipay:
+      app-id: ${ALIPAY_APP_ID:}
+      # 商户应用私钥（PKCS8 Base64，可含 PEM 头尾）
+      private-key: ${ALIPAY_PRIVATE_KEY:}
+      # 支付宝公钥，用于验证异步通知签名；缺失时服务端会拒绝一切通知（防伪造入账）
+      public-key: ${ALIPAY_PUBLIC_KEY:}
+      gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi.alipay.com/gateway.do}
+    wechat:
+      app-id: ${WECHAT_APP_ID:}
+      mch-id: ${WECHAT_MCH_ID:}
+      serial-no: ${WECHAT_SERIAL_NO:}
+      private-key: ${WECHAT_PRIVATE_KEY:}
+      # APIv3 密钥（32 位），用于 AES-256-GCM 解密回调报文
+      api-v3-key: ${WECHAT_API_V3_KEY:}
+      # 微信支付平台证书公钥，用于验证回调签名
+      platform-public-key: ${WECHAT_PLATFORM_PUBLIC_KEY:}
+      api-url: ${WECHAT_API_URL:https://api.mch.weixin.qq.com}
+

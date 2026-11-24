@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「服务器共享参考音频」弹窗里的一行：左侧名称 + 元信息，右侧试听按钮。
+
+  右侧按钮用 TextView 而不是 Button：这一行整体是可点区域（点击=添加到库），
+  在可点行里再放一个带默认背景的 Button 会出现两层点击涟漪互相打架，
+  视觉上也把「次要动作（试听）」渲染得比「主要动作（添加）」更重。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="?android:attr/selectableItemBackground"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvServerRefName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="15sp"
+            android:textColor="@android:color/primary_text_light"
+            android:ellipsize="end"
+            android:maxLines="1" />
+
+        <TextView
+            android:id="@+id/tvServerRefMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@android:color/secondary_text_dark"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/btnPreviewServerRef"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="56dp"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:text="试听"
+        android:textSize="13sp"
+        android:textColor="@color/primary"
+        android:background="?android:attr/selectableItemBackground" />
+
+</LinearLayout>

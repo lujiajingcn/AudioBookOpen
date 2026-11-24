@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  书架任务行「状态区」可点时的按下反馈（涟漪）。
+
+  与书籍行的 `?attr/selectableItemBackground` 等价，但单独抽出来是因为
+  这个背景**只在合成已结束时才挂上**：
+  合成中的那一行若也带涟漪，用户按下去看到波纹却不跳转 ——
+  那比「完全没有反馈」更像界面坏了。
+
+  颜色取 colorControlHighlight，与全应用的可点反馈一致。
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/colorControlHighlight">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+</ripple>

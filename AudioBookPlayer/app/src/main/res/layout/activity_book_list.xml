@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 多选模式提示文字（隐藏普通模式元素） -->
+    <TextView
+        android:id="@+id/tvSelectHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="请选择要合成的电子书（可多选）"
+        android:textSize="15sp"
+        android:textColor="@android:color/primary_text_light"
+        android:padding="12dp"
+        android:background="@android:color/darker_gray"
+        android:visibility="gone" />
+
+    <!-- 书籍列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 多选模式确认按钮 -->
+    <Button
+        android:id="@+id/btnConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="✅ 确认选择"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_margin="8dp"
+        android:enabled="false"
+        android:visibility="gone" />
+</LinearLayout>

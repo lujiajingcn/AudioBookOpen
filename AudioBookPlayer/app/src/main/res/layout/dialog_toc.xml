@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  目录面板：贴屏幕左侧的侧栏（窗口位置/尺寸在 BookContentActivity.showTocDialog() 里设定）。
+  根布局必须 match_parent 高：窗口高度是 MATCH_PARENT，若根布局还是 wrap_content，
+  侧栏就只裹住内容高度、贴不到底，也就不是"贴着左边缘的整条面板"。
+  background 必须有：窗口自身背景已置透明（否则全高时窗口默认背景的 inset 会让面板边缘露缝），
+  面板的底色只能由这里提供；用 ?attr/colorSurface 与阅读页 activity_book_content 保持一致，
+  深/浅色模式自动跟随。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:paddingTop="16dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="目  录"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        android:gravity="center_horizontal"
+        android:paddingBottom="8dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider"
+        android:layout_marginBottom="4dp" />
+
+    <!--
+      R2-P2-18：这里原先是 layout_height="0dp" + layout_weight="1" + maxHeight="400dp"。
+      两个问题叠在一起：
+      1) RecyclerView **不读** android:maxHeight（只有 TextView / ImageView / ProgressBar
+         等少数控件读取该属性），400dp 限高静默失效；
+      2) 父 LinearLayout 是 wrap_content，LinearLayout 只在父高为 EXACTLY/AT_MOST
+         且还有剩余空间时才做 weight 分配，于是 0dp 的子 View 被量成 **0 高**。
+      改为由 RecyclerView 自己 wrap_content 量出完整内容高度，400dp 上限在
+      BookContentActivity.showTocDialog() 里按像素截断。
+    -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewToc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Release 构建（E 风险修复）：默认禁止明文 HTTP。
+         旧配置对所有构建放开 cleartextTrafficPermitted="true"，JWT Bearer token、
+         登录密码会随明文 HTTP 在局域网/公网裸奔，任何中间设备都能抓包窃取。
+         现在正式包一律走 HTTPS；自建服务器请配置 TLS 证书。
+         仅保留本机/模拟器回环地址例外，保证「模拟器连本机服务」的调试路径可用。
+         Debug 构建使用 src/debug/res/xml 下的同名配置（允许明文，便于本地开发）。 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- 模拟器访问宿主机 localhost 的专用地址 -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- 自建服务器（腾讯云 api.example.com）当前只有明文 HTTP，未配 TLS 证书。
+             这里按主机粒度放行，而不是把 base-config 改成全域放开 ——
+             后者会让这台设备上**所有**应用的明文流量都不再被系统拦截。
+             待服务器接入域名与证书（或前置 nginx 做 TLS 终结）后，
+             应把本条删除并把 BASE_URL 换成 https://，让正式包回到默认的全域禁明文。 -->
+        <domain includeSubdomains="false">api.example.com</domain>
+    </domain-config>
+</network-security-config>

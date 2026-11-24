@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  发现页：标签页 + 分页区 + 「＋」发帖悬浮按钮。
+
+  外层用 FrameLayout 而不是 LinearLayout，是为了把 FAB **叠在** ViewPager2 之上
+  （而不是挤在布局流里）。FAB 放在页面容器这一层而不是各标签页 Fragment 内部，
+  有两个好处：
+    1) 切标签页时它不会被 ViewPager2 一起横滑走，位置稳定；
+    2) 只在「讨论区」显示的控制点收敛在本页一处（见 DiscoverFragment 的页面回调）。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 顶部三个标签页：参考音频 / 讨论区 / 推荐 -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:tabGravity="fill"
+            app:tabMode="fixed"
+            app:tabIndicatorColor="@color/primary"
+            app:tabSelectedTextColor="@color/primary"
+            app:tabTextColor="@color/secondary_text" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPager"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <!--
+      发帖入口：仅「讨论区」标签页可见（初始态由 DiscoverFragment 按当前页签设定）。
+      contentDescription 会读给无障碍服务听，所以写「发帖」而不是「加号」。
+    -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCreatePost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="发帖"
+        android:src="@drawable/ic_add"
+        android:visibility="gone"
+        app:backgroundTint="@color/primary"
+        app:tint="@color/white" />
+
+</FrameLayout>

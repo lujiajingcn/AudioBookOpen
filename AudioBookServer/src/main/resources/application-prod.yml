@@ -1,0 +1,94 @@
+# ===== 生产环境配置 =====
+# 敏感信息（数据库账号密码、JWT 密钥等）统一通过环境变量注入，不要明文写在此文件中。
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+
+app:
+  # 生产环境上传/书城目录建议放到持久化卷中
+  upload:
+    dir: ${UPLOAD_DIR:/data/audiobook/uploads}
+  store:
+    dir: ${STORE_DIR:/data/audiobook/store_books}
+  # 离线词典分发目录（放 dict.db.gz + dict.meta，不入version 控制，需单独上传）
+  dict:
+    dir: ${DICT_DIR:/data/audiobook/dict}
+  # 认证 Cookie：生产 https 环境必须带 Secure 属性，防止明文链路窃取
+  auth:
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:true}
+  # 生产环境 CORS 来源通过环境变量配置
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  # 接口限流（覆盖默认值）
+  rate-limit:
+    # 与 application.yml / RateLimitFilter 内置默认值保持一致（登录/注册 + 同步 TTS 合成
+    # + 参考音频上传 + 任务目录提取 + 整本内容解析）。task/\d+/toc、tts/extract-content
+    # 与 store/book/{id}/content 对大 PDF/EPUB 都是分钟级操作，必须限流。
+    limited-paths: '${RATE_LIMIT_LIMITED_PATHS:^/api/(auth/(login|register)|tts/(clone|synthesize|extract-content|upload-reference|references(/\d+/update)?|task/\d+/toc)|store/book/\d+/content|posts|app/dict/download)$}'
+    login:
+      # 与 application.yml / RateLimitFilter 内置默认值保持一致（三处必须同步）。
+      # 【失败次数】10 次/60 秒：成功登录由 RateLimitFilter 退还本次占用
+      # （ratelimit_release.lua），正常登录不消耗额度，只有失败在累积。
+      # ⚠️ 登录失败没有自动封禁（bannedUntil 只能管理员手动设），
+      # 这条限流是暴力破解的唯一防线，阈值不宜再放宽。
+      max-attempts: ${RATE_LIMIT_LOGIN_MAX_ATTEMPTS:10}
+      window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+    register:
+      # 【失败次数】3 次/60 秒，同样成功退还（语义与 login 一致）。
+      max-attempts: ${RATE_LIMIT_REGISTER_MAX_ATTEMPTS:3}
+      window-seconds: ${RATE_LIMIT_REGISTER_WINDOW_SECONDS:60}
+    tts:
+      max-attempts: ${RATE_LIMIT_TTS_MAX_ATTEMPTS:10}
+      window-seconds: ${RATE_LIMIT_TTS_WINDOW_SECONDS:60}
+    # 离线词典下载独立配额（免鉴权 + 23.1MB，阈值与 application.yml 一致）。
+    # 缺了它词典路径会掉进 TTS 桶：既限错资源，又和合成互相挤占配额。
+    dict:
+      max-attempts: ${RATE_LIMIT_DICT_MAX_ATTEMPTS:20}
+      window-seconds: ${RATE_LIMIT_DICT_WINDOW_SECONDS:60}
+  # 支付：生产环境默认关闭模拟支付。开着等于把「免费领积分」接口暴露给所有登录用户。
+  payment:
+    allow-mock: ${PAY_ALLOW_MOCK:false}
+
+# 生产环境的语音合成节点。
+#
+# 节点地址清单以数据库表 tts_nodes 为唯一真源，通过管理后台 /api/admin/tts/nodes 维护，
+# 运行期增删启停均不需要重启服务。
+#
+# MOSS_TTS_URL 现在【可选】：它只在首次部署（tts_nodes 表为空）时作为种子地址
+# 落一条默认节点记录。表里已有记录后本变量就不再被使用。
+#   - 首次部署：可设 MOSS_TTS_URL，省去手动添加第一台机器；
+#   - 已有数据：不设也能正常启动（此前该变量必填，升级到多节点版本后可以移除）。
+#
+# ⚠️ 生产 ddl-auto=validate，升级到本版本前必须先执行建表脚本，
+#    否则启动时 Hibernate 校验不到 tts_nodes 表会直接失败。
+#    脚本见 src/main/resources/db/tts_nodes.sql
+#
+# 同理，启用「参考音频主题」前必须先执行 db/reference_audio_topics.sql
+# （建 reference_audio_topic 表 + reference_audio.topic_id 列），否则启动时校验失败。
+moss:
+  tts:
+    url: ${MOSS_TTS_URL:}

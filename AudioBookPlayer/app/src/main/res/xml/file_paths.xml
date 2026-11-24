@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 对外暴露的路径（供系统安装器读取已下载的 APK）。
+
+  Android 7.0 起把 file:// URI 抛给其它应用会触发 FileUriExposedException 直接崩溃，
+  必须经 FileProvider 转成 content:// 并授予临时读权限。
+
+  这里只放行 filesDir/update/，遵循最小暴露原则——不要把应用私有目录整体开放，
+  否则任何拿到该 content:// 的应用都能读取本应用的私有数据（登录 token 等）。
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="update" path="update/" />
+</paths>

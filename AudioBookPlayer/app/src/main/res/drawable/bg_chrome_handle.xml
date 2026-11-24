@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  切栏把手的背景：半透明黑圆角块。
+
+  不用 elevation（阴影）而用半透明底，三个原因：
+  1. 阴影跟随栏的显隐反复出现/消失，会让人以为把手也在跟着变；
+  2. 把手压在正文上，阴影会在正文行下画出一条横线，视觉上像「这行被划掉了」；
+  3. 半透明黑在浅色/深色主题下都能保证白色 grip 图标读得出来。
+
+  alpha 0.28 是实测后定的：0.15 太弱（正文行高亮时几乎看不见把手），
+  0.45 太重（整块像一个常驻按钮，抢正文注意力）。0.28 在
+  「一眼能找到」与「不打断阅读」之间。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#59000000" />
+    <corners android:radius="12dp" />
+</shape>

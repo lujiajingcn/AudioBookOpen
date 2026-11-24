@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      启动页底部必须留给版本号区的净空高度。
+
+      SplashArtworkView 用它决定品牌图的下边界（图片底边 = 控件高度 - 本值），
+      保证任何屏幕比例下版本号都不会压到图上；同时它也是「版本号区上沿」，
+      底部文字的整体高度必须控制在这个范围内：
+          版本号行高 ≈ 18dp + 行间距 6dp + 版权行高 ≈ 16dp ≈ 40dp
+      当前取值 200dp，余量很大，是为了让底部纯色区在视觉上是一整块而不是一条细边。
+      若要压缩，别小于 90dp，否则文字会顶到图片边缘。
+    -->
+    <dimen name="splash_footer_min_space">200dp</dimen>
+
+    <!-- 版本号距屏幕底边的距离。要大于系统手势条高度（≈48dp），避免被手势条压住 -->
+    <dimen name="splash_version_margin_bottom">58dp</dimen>
+</resources>

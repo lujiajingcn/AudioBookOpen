@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  阅读页「字体大小」对话框。
+
+  ⚠️ 作用域：只调**阅读页电子书正文**的字号，不动应用其他部分。
+  早期实现是把比例写进 AppPrefs.font_scale，再由 BaseActivity.attachBaseContext
+  注入 Configuration.fontScale —— 那是**全局**缩放，8 个 Activity 的标题栏、
+  底部导航、弹窗、列表全都跟着一起变大变小，与需求不符。
+  现在改为：正文行（item_line 的 tv_text）由 LineAdapter 用
+  setTextSize(SP, 16 × 比例) 直接量，比例存 AppPrefs.reader_text_scale。
+
+  ⚠️ 偏好键**字符串仍是 "font_scale"**（只改了 Kotlin 侧的方法名）：
+  改名会让已存的用户偏好读不出来，字号被静默重置成 100%。存量值直接沿用，
+  只是它现在只作用于正文 —— 对用户是「终于不乱缩了」，不是丢设置。
+
+  两种调节手段并存：
+  · 左侧小 A / 右侧大 A：**每次 ±5 个百分点**（点一下即改，范围 80%~160%）；
+  · 中间 SeekBar：连续拖，给不想一次次点的用户精调。
+  两者操作同一个 percent 变量、互相同步（见 BookContentActivity.showFontSizeDialog）。
+
+  SeekBar 的 max 取 80、progress 取 (百分比 - 80)：把 80% 当 0 用，
+  这样进度条的可拖区间就正好是 80~160，不需要在回调里做数学换算。
+  预览行用 sp * scale 直接量文字，让用户在点确定前就看到实际大小。
+
+  A 按钮的触摸区各留 48dp（Material 最小可点区域），否则那两行小字很难点中；
+  背景用 selectableItemBackgroundBorderless，按下有涟漪但不带方形边框。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/tvFontPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="示例文字：读书之乐乐何如"
+        android:textSize="16sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- 缩小 5%：小 A。48dp 见文件头注释 -->
+        <TextView
+            android:id="@+id/btnFontSmaller"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:text="A"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="缩小字号" />
+
+        <SeekBar
+            android:id="@+id/seekFontSize"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="80"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp" />
+
+        <!-- 放大 5%：大 A -->
+        <TextView
+            android:id="@+id/btnFontLarger"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:text="A"
+            android:textSize="22sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="放大字号" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvFontScaleValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="end"
+        android:text="100%"
+        android:textSize="13sp"
+        android:textColor="?android:attr/textColorSecondary" />
+</LinearLayout>

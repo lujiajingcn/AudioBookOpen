@@ -1,0 +1,23 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      #19 夜间模式：DayNight 主题在「夜间」下自动套用本文件。
+      只覆盖关键调色板，其余继承 DayNight 的暗色默认（Material 组件、系统栏自动变暗）。
+      阅读器等布局改用 ?attr/colorSurface / ?attr/colorOnSurface 等主题属性后，
+      会自动跟随此处定义，从而真正「不刺眼」。
+
+      父类保持与 values/themes.xml 一致使用 NoActionBar，避免夜间模式下
+      顶部 ActionBar（显示 android:label="有声伴读"）重新出现，日夜体验不一致。
+    -->
+    <style name="Theme.AudioBookPlayer" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 暖金主色在夜间的对应值：同一色相压暗。白字压它 11.70:1。
+             参考：改暖金之前这里是蓝灰 #37474F，白字只有 2.94:1（不达 AA）。 -->
+        <item name="colorPrimary">#4A3418</item>
+        <item name="colorPrimaryDark">#33230F</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:colorBackground">#121212</item>
+        <item name="colorSurface">#1E1E1E</item>
+        <item name="colorOnSurface">#E0E0E0</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:windowBackground">#121212</item>
+    </style>
+</resources>

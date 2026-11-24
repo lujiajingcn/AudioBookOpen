@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 顶部标题栏：图标靠右（筛选提示可见时居左，图标仍靠右）。
+         「语音合成 / 导入电子书 / 链接导入」三个大按钮已收进 btnMore 的弹出菜单；
+         搜索功能移到了独立的搜索页（点击放大镜进入）；
+         分类筛选 chips 已收进 btnFilter 的弹出菜单，不再常驻占一行。
+         注意 gravity 里的 end：标题 tvShelfTitle 未筛选时是 GONE，
+         它那个 layout_weight=1 的占位随之失效，不设 end 三个图标会从左边开始排。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical|end"
+        android:paddingStart="12dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp">
+
+        <!-- 默认不占位（gone）：书架页顶部只留图标，不再显示「我的书架」标题。
+             仅在筛选生效时由 updateShelfTitle() 显示成「筛选：本地」这类提示，
+             否则用户不知道列表为什么变短了。 -->
+        <TextView
+            android:id="@+id/tvShelfTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/btnSearch"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_search"
+            android:scaleType="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="搜索" />
+
+        <ImageButton
+            android:id="@+id/btnFilter"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_filter"
+            android:scaleType="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="筛选分类" />
+
+        <ImageButton
+            android:id="@+id/btnMore"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_more_vert"
+            android:scaleType="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="更多操作" />
+    </LinearLayout>
+
+    <!-- 标题栏与内容区的分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray" />
+
+    <!-- 「长按可拖动排序」的操作提示：拖拽是隐藏手势，没有提示用户根本不知道有这回事。
+         文案低调（12sp 灰色），排在筛选提示下方，不抢书名的视觉重心。 -->
+    <TextView
+        android:id="@+id/tvDragHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="长按书籍可拖动，调整书架顺序"
+        android:textSize="12sp"
+        android:textColor="@android:color/secondary_text_dark"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="2dp"
+        android:visibility="gone" />
+
+    <!-- 有失败任务时才显示，点击批量重新调度 -->
+    <Button
+        android:id="@+id/btnRetryAllFailed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="重试全部失败"
+        android:visibility="gone"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="4dp" />
+
+    <!-- #17：书架为空时的引导（插图 + 文案 + 一键导入） -->
+    <LinearLayout
+        android:id="@+id/llEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/ivEmpty"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_empty_bookshelf"
+            android:contentDescription="书架为空" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="书架还是空的&#10;导入一本电子书，或合成你的第一本有声书吧"
+            android:textSize="15sp"
+            android:textColor="#888888" />
+
+        <Button
+            android:id="@+id/btnEmptyImport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="📚 导入电子书" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  书架卡片的分类角标底色。
+
+  原来写死 @android:color/holo_blue_dark，主界面统一到暖金后改成主色资源：
+  角标内是白字（见 item_shelf_book.xml 的 tvCategory），白字压主色 4.90:1，
+  与 FAB / 顶部栏同一套色，不再是孤零零的一块蓝。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/primary" />
+    <corners android:radius="10dp" />
+</shape>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  R2-P2-17：书架条目背景。
+
+  原先的写法是 item_book.xml 声明 ?attr/selectableItemBackground（水波纹），
+  而 BookListAdapter.bind() 又用 `itemView.setBackgroundColor(...)` 把它**整体替换**掉：
+  未选中时设成 Color.TRANSPARENT，于是列表项彻底失去按压反馈。
+
+  改为 selector + isSelected 驱动（与 LineAdapter 一致）：
+  - 选中态：水波纹叠在浅蓝高亮之上，按下仍有反馈；
+  - 未选中态：直接用主题的可选中背景（水波纹）。
+
+  注意别只删掉 else 分支——那样取消选中后背景不会复原（会残留上一次的高亮）。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <ripple android:color="?attr/colorControlHighlight">
+            <item android:drawable="@color/book_selected_highlight" />
+        </ripple>
+    </item>
+    <!--
+      注意：未选中态不能用 android:drawable="?attr/selectableItemBackground"。
+      selectableItemBackground 是 drawable 类型属性，嵌套在 selector 子项里时，
+      StateListDrawable 解析子 drawable 会因 theme=null 无法解析属性，
+      抛出 Resources$NotFoundException → InflateException 崩溃。
+      改用同主题的 color 属性水波纹（?attr/colorControlHighlight 走颜色解析路径、可正常解析），
+      既保留按压反馈，又避免 attr-drawable 嵌套崩溃。
+    -->
+    <item>
+        <ripple android:color="?attr/colorControlHighlight" />
+    </item>
+</selector>

@@ -1,0 +1,30 @@
+{
+  "name": "audiobook-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.0",
+    "@audiobook/shared": "file:../AudioBookShared",
+    "ant-design-vue": "^4.1.1",
+    "axios": "^1.6.2",
+    "dayjs": "^1.11.10",
+    "pinia": "^2.1.7",
+    "qrcode": "^1.5.4",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/qrcode": "^1.5.6",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "vue-tsc": "^2.2.12"
+  }
+}

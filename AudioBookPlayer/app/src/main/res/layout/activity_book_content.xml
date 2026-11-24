@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  阅读页布局（2026-09-29 加回顶部菜单栏）。
+
+  顶部菜单栏：正文上方 48dp 一条工具栏，**左侧**从左到右依次为
+  返回 / 目录 / 字体大小(A) / 搜索本书内容，「逐段音色」靠右对齐放在同一栏最右侧。
+
+  与 2026-09-28「去掉顶部书名栏」不冲突：那次去掉的是**书名栏**（书名文字 + 返回按钮，
+  目的是把纵向空间还给正文）；本次加回来的是**功能菜单栏**，栏内没有书名，
+  高度压到 48dp，正文可用高度基本不受影响。也因此不再需要「目录按钮悬浮在左上角」
+  那套悬浮按钮组（readerFloatActions 已删除）—— 悬浮按钮和顶部栏会在左上角打架。
+
+  根布局仍是 FrameLayout：正文列表与底部播放栏放内层 LinearLayout，
+  日后若要加悬浮元素（回到顶部/FAB 之类）可继续叠在正文之上，不必再改结构。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <!-- 顶部菜单栏 + 正文 + 底部播放控制栏（自上而下，均不悬浮、不互相遮挡） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!--
+          顶部菜单栏。
+          图标按钮统一 44dp（触摸目标下限）、无边界水波纹背景；图标颜色由各矢量自带的
+          android:tint="?attr/colorControlNormal" 提供，**不要**在控件上写 android:tint ——
+          appcompat 控件上会触发 lint 的 UseAppTint 直接判 error。
+        -->
+        <LinearLayout
+            android:id="@+id/readerTopBar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:background="?attr/colorSurface"
+            android:elevation="2dp">
+
+            <!-- ① 返回 -->
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="返回" />
+
+            <!-- ② 目录 -->
+            <ImageButton
+                android:id="@+id/btnToc"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/colorOnSurface"
+                android:contentDescription="目录" />
+
+            <!-- ③ 字体大小：图标就是字母 A，用 TextView 画（矢量里描字形不划算） -->
+            <TextView
+                android:id="@+id/btnFontSize"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:gravity="center"
+                android:text="A"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="调整字体大小"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <!-- ④ 搜索本书内容 -->
+            <ImageButton
+                android:id="@+id/btnSearch"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_search"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="搜索本书内容" />
+
+            <!--
+              ⑤ 点读（开关型按钮，2026-10-09）。
+
+              图标是伸出食指的手型（@drawable/ic_point_read），两态靠 tint 区分：
+              未选中 = colorOnSurface（与旁边几个按钮同色，只是「一个入口」）、
+              选中   = colorPrimary（明显异色，表示「模式已开启」）。
+              这两色都由 `@color/tint_point_read` 这个 ColorStateList 按
+              `state_selected` 自动切换，夜间模式也自动跟随主题，不用另写 night 版。
+
+              ⚠️ 必须用 **app:tint** 而不是 android:tint：后者在 appcompat 控件上
+              会被 lint 的 UseAppTint 直接判 error（2026-09-29 踩过）。
+
+              ⚠️ 图标本身**不能**写 android:tint（见 ic_point_read.xml 的注释）：
+              控件上的 app:tint 会覆盖 drawable 自带的 tint，两态就做不出来。
+
+              ⚠️ 不设 android:background 的 selector（不要 bg 变色）：这个按钮的
+              「开/关」语义已经由图标颜色表达，再叠一层底色会在夜间变成一块亮斑。
+              背景沿用同栏其它按钮的 selectableItemBackgroundBorderless（按压反馈）。
+            -->
+            <ImageButton
+                android:id="@+id/btnPointRead"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_point_read"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/tint_point_read"
+                android:contentDescription="点读：点英文单词查词并朗读" />
+
+            <!-- 弹簧：把「逐段音色」推到最右侧，不占用户指定的左侧四个位置 -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- #20：逐段音色绑定（仅当本书有服务端 TTS 任务时显示）。原来跟在悬浮组里，随悬浮组一并上栏。 -->
+            <ImageButton
+                android:id="@+id/btnSegmentVoice"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@android:drawable/ic_menu_manage"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/colorOnSurface"
+                android:visibility="gone"
+                android:contentDescription="逐段音色" />
+        </LinearLayout>
+
+        <!-- 正文列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 底部播放控制栏（P1：播放控制 / 睡眠定时 / 倍速） -->
+        <LinearLayout
+            android:id="@+id/playbackControlBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="top"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:background="?android:attr/colorBackground"
+            android:elevation="8dp">
+
+            <!--
+              「朗读」开关（2026-10-18 从顶栏迁来，复用底部播放按钮）：
+
+              顶栏原本有一个朗读总开关（#21），但底部播放栏在朗读进行中本来就接管了
+              暂停/继续/段落跳转（见 BookContentActivity.setupPlaybackControlBar）——
+              启动入口放顶栏、控制入口在底部，一条链路两个地方。本次把入口也统一到底部：
+
+              · **无音频的书**：后退/播放/前进三联键常驻 —— 播放键启动朗读（再点暂停/继续），
+                后退/前进按「段」跳转（跳转单位与自动播放一致），本按钮不显示；
+              · **有音频的书**：播放键保持「播/设有声书」语义、后退/前进跳音频段，
+                朗读由本按钮启停。
+
+              两态高亮沿用 tint_read_aloud（state_selected 变色，夜间自动跟随）。
+              默认 gone：本书无音频时不占位，由代码按 hasAudio 显隐。
+            -->
+            <ImageButton
+                android:id="@+id/btnReadAloudBar"
+                android:layout_width="44dp"
+                android:layout_height="28dp"
+                android:scaleType="center"
+                android:src="@android:drawable/ic_btn_speak_now"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/tint_read_aloud"
+                android:visibility="gone"
+                android:contentDescription="朗读：用系统语音念正文" />
+
+            <ImageButton
+                android:id="@+id/btnPlayPrev"
+                android:layout_width="44dp"
+                android:layout_height="28dp"
+                android:scaleType="center"
+                android:src="@android:drawable/ic_media_previous"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="上一段" />
+
+            <ImageButton
+                android:id="@+id/btnPlayToggle"
+                android:layout_width="52dp"
+                android:layout_height="28dp"
+                android:scaleType="center"
+                android:src="@android:drawable/ic_media_play"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="播放/暂停" />
+
+            <ImageButton
+                android:id="@+id/btnPlayNext"
+                android:layout_width="44dp"
+                android:layout_height="28dp"
+                android:scaleType="center"
+                android:src="@android:drawable/ic_media_next"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="下一段" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!--
+              「回到播放处」：**朗读与有声书播放共用**（初始 gone，由代码按需显示）。
+
+              为什么需要它：播放/朗读每推进一段就自动跟随滚动，用户一旦手动翻页看别处，
+              下一段的推进就会把正文硬拉回去 —— 正在看的内容与正在听的内容互相打架。
+              现在的规则：用户手动翻页后**停止自动跟随**，把「我想回到播放位置」变成
+              一个**显式动作**：点这个按钮才瞬时定位回去（顺带恢复自动跟随）。
+
+              **2026-10-30 起覆盖有声书播放**（此前只管朗读）：有声书播放的
+              `currentPlayingPosition` 观察者原先是无条件 smoothScrollToPosition，
+              用户滚走看内容必被下一段拽回，而底栏又没有任何出口。现在两种形态共用
+              同一条显隐规则（目标行不在视口内才显示）与同一个点击入口
+              （BookContentActivity.backToPlaybackPosition 按模式分发）。
+
+              与右侧「定时」「1.0x」的位次：朗读时那两者被隐藏（对朗读无意义），
+              因此按钮独占右侧；有声书播放时三者并排 —— 准星只有 32dp 宽（纯图标 + 8dp
+              内边距），实测不影响「定时」与倍速的点击区。
+
+              **2026-10-29 文字换图标**：原文字按钮（「回到播放处」六个字）在 28dp 高的
+              底栏里要占 ~96dp，比常驻的「定时」「1.0x」宽一倍，视觉权重与出现频率
+              （只在"播放位置不在眼前"才显示）倒挂。改为只放一枚 `my_location`
+              准星图标（见 drawable/ic_back_to_play_position.xml 里为什么是准星），
+              文字降级成两侧提示：
+
+              · **长按** ⇒ `TooltipCompat` 弹出「回到播放处」（Kotlin 侧设置，
+                不写在这里，因为 tooltip 只能由代码挂）；
+              · **读屏** ⇒ `android:contentDescription`（Button 无 text 后，
+                没有这行 TalkBack 就只会念"按钮"）。
+
+              ⚠️ 图标必须显式 `app:iconTint="?attr/colorPrimary"`：M2 的
+              `materialButtonOutlinedStyle` 不给图标继承文字色，不写的话 drawable 里的
+              白色占位色会原样画出来，浅色主题下等于白底白图标。
+              `app:iconGravity="textStart"` + `iconPadding=0` + 无 text ⇒ 图标在
+              按钮内居中（左右 padding 各 8dp，撑出 32dp 宽的点击区）。
+            -->
+            <Button
+                android:id="@+id/btnBackToReadPosition"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:contentDescription="回到播放处"
+                android:visibility="gone"
+                app:icon="@drawable/ic_back_to_play_position"
+                app:iconSize="16dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="?attr/colorPrimary" />
+
+            <Button
+                android:id="@+id/btnSleepTimer"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:minWidth="72dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="定时" />
+
+            <Button
+                android:id="@+id/btnSpeed"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:minWidth="76dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:layout_marginStart="8dp"
+                android:text="1.0x" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!--
+      切栏把手（方案 D，2026-10-04）。
+
+      为什么是它：原方案 A 在正文左右各留 162px 带做切栏热区。实测（Redmi K30 Pro，
+      1080px 宽 / 正文行 bounds x∈[44,1036] / 16sp 字宽 44px）⇒ 两侧带各自压住
+      **2.7 个字**，一行共 **5.4 字（占 24%）点不到播**。切栏是低频操作，
+      却让高频的「点句播」付了四分之一的可点面积，频率与代价不匹配。
+
+      换成常驻把手：把热区从「整列像素」缩成「一个小控件」。
+      **每一行字的 100% 都归还给了点播**，代价只是屏幕上多一个小元素。
+
+      参数取舍：
+      · 24×48dp，横向视觉很窄（只有正文宽度的 2%）⇒ 即使压在字上也可忽略，
+        且仍满足 48dp 触摸下限（无障碍底线）。
+      · 不用 elevation 阴影，改用半透明黑底 + 白图标：阴影会跟着栏的显隐反复出现，
+        半透明底在任何主题下都读得出「这是个把手」而不会显得像正文高亮。
+      · layout_gravity="top|end"（不是 center_vertical）：把手可拖动，纵向位置要由代码
+        用 marginTop 指定。若用 center_vertical，FrameLayout 的 CENTER 会吃掉剩余空间，
+        marginTop 直接失效（这是 FrameLayout 的老坑，不是猜的）。居中只是「没读过
+        偏好」时的兜底，由代码在 onCreate 后按保存比例设定。
+      · 放最右侧而非左侧：左侧靠边是系统返回手势区，且中文阅读习惯右手持机拇指在右。
+    -->
+    <ImageButton
+        android:id="@+id/btnChromeHandle"
+        android:layout_width="24dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="2dp"
+        android:src="@drawable/ic_chrome_handle"
+        android:background="@drawable/bg_chrome_handle"
+        android:scaleType="center"
+        android:contentDescription="切换工具栏，按住可拖动" />
+
+    <!--
+      解析中的文字提示（2026-10-30）。
+
+      背景：PDF 从书城下载后**第一次**打开要本地整本提取文本（实测国富论 1281 页 /
+      234 万字，桌面 PDFium 2.7s，手机更慢），这段时间正文区是空的 —— 只有顶部那条
+      2dp 进度条在动，用户在手机上看到的就是一片白，判断不出是在解析还是已经卡死。
+
+      所以把「在做什么」写出来，并且带页数进度（PageProgress 由
+      BookViewModel.parsePageProgress 提供）。注意几点：
+        · 居中压正文，但**不吞触摸**（TextView 默认不可点、不可聚焦）；
+        · 颜色用 ?android:attr/textColorSecondary —— 别写
+          @android:color/primary_text_light 这类"主题专用"系统色，
+          夜间模式下那种色是纯黑，压在深色背景上等于没有字；
+        · 显隐由 Activity 按 Phase 控制，与那条 2dp 进度条同一个时机。
+    -->
+    <TextView
+        android:id="@+id/readerLoadingHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:padding="24dp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <!--
+      解析中提示（2026-10-10 从「全屏遮罩」降级为「顶部细进度条」）。
+
+      旧形态是一个 ?attr/colorSurface + clickable=true 的**全屏遮罩**，盖住整个正文区。
+      它要解决的是「正文未到达时是纯白」—— 这个诉求是对的，但实现方式过重：
+      PDF 首次打开要整本上传服务端提取（弱网可达几十秒），这段时间用户被挡在
+      **顶栏、底栏、目录按钮之外**，什么都点不了，看起来就像卡死。
+
+      现在改成贴在正文顶部的一条 2dp 细进度条：
+        · 不遮挡正文（正文此时本来就空，有内容也不挡）
+        · **不吞触摸**（没有 clickable/focusable）⇒ 顶栏/底栏/目录按钮全程可交互
+        · 由 [BookViewModel.Phase] 驱动：Resolving 显示，ContentReady/StructureReady 隐藏
+
+      放在 FrameLayout 根部（layout_gravity="top"）而不是正文 LinearLayout 内部：
+      这样它不受顶部菜单栏显隐（切栏动画）影响，解析中不会跟着一起被滑走。
+    -->
+    <ProgressBar
+        android:id="@+id/readerLoadingOverlay"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_gravity="top"
+        android:indeterminate="true"
+        android:visibility="gone" />
+</FrameLayout>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动页整屏背景。
+
+  这是一条「两段式」的垂直渐变，不是随便挑的三色：
+
+    #F9F4E0 (0%)   与启动图 splash_screen.png 的上边缘**同色** —— 图按顶部对齐摆放，
+                   所以图上方这条背景带与图拼接处不会有可见的分界线；
+    #F8EED6 (45%)  图中段边缘色，让渐变贴合图自身的过渡；
+    #F3CAA0 (100%) 图底沿色，同时是底部纯色区 / 版本号区域的底色。
+
+  高屏机型（如 22:9）竖屏时，1024x1280 的启动图按宽度缩放后撑不满高度，
+  会上下各留一段背景；用这条渐变填满，接缝处与图同色，因此看不出来。
+  改图时这三个颜色要跟着一起重新取色（见 values/colors.xml 的说明）。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <gradient
+        android:angle="270"
+        android:startColor="@color/splash_bg_top"
+        android:centerColor="@color/splash_bg_mid"
+        android:endColor="@color/splash_bottom"
+        android:centerY="0.45"
+        android:type="linear" />
+
+</shape>

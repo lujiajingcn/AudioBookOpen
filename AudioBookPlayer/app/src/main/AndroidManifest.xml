@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      #18 书城下载的「仅 WiFi 下载」开关依赖 ConnectivityManager.getActiveNetwork()/
+      getNetworkCapabilities()，该 API 需要 ACCESS_NETWORK_STATE；否则运行时抛 SecurityException。
+      此权限为普通权限（安装即授予，无需运行时申请）。
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--
+      targetSdk 34（Android 14）起，前台服务必须声明与 foregroundServiceType 匹配的专用权限，
+      否则 PlaybackService.ensureForeground() 调用 startForeground(FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+      会抛 SecurityException，播放功能直接崩溃。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!--
+      本机语音合成的前台服务用 dataSync 类型：它在做的是**计算**（逐段推理），
+      不是播放，只有 dataSync 语义对得上。targetSdk 34 起必须同时声明
+      FOREGROUND_SERVICE_DATA_SYNC，否则 startForeground 抛
+      MissingForegroundServiceTypeException / SecurityException。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!--
+      录制参考音频必需：未在 Manifest 声明的权限，运行时 requestPermissions 会被系统
+      直接拒绝（永不弹窗），录音功能整条链路失效。
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!--
+      Android 13+（targetSdk 34）通知栏播放控制需要该运行时权限；不声明则无法弹出
+      授权框，豁免期过后通知被隐藏，用户失去唯一的后台播放控制入口。
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- PlaybackService.setWakeMode(PARTIAL_WAKE_LOCK) 锁屏播放需要 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!--
+      Android 8.0（API 26）起，安装「未知来源」应用（非应用商店下载的 APK）需要该权限。
+      仅声明还不够：运行时必须由用户在系统设置里单独给本应用授权
+      （PackageManager.canRequestPackageInstalls()）。未授权就发起安装会被系统
+      静默拒绝，用户只看到「点了没反应」，所以 UpdateManager 会先判定并跳授权页。
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+      点读朗读单词要用系统 TTS。Android 11（API 30）起包可见性收紧：
+      不声明 <queries> 的话 TextToSpeech 查不到任何 TTS 引擎，
+      构造即返回 ERROR —— 表现为「点读永远不出声、也没有报错」。
+      这条 intent 就是引擎注册时对外暴露的 action（TtsEngineService 的）。
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
+    <!--
+      安全策略说明：
+      明文 HTTP 的放行范围完全由 @xml/network_security_config 控制（仅 localhost / 127.0.0.1 / 10.0.2.2），
+      这里不再声明 android:usesCleartextTraffic="true"——那会表达「全域放开明文」的相反意图，
+      与 network_security_config 中「正式包一律 HTTPS，保护 JWT / 密码」的设计冲突。
+
+      allowBackup 关闭原因：AuthManager 使用 EncryptedSharedPreferences，
+      其主密钥存于设备 Keystore 且不参与备份。若允许自动备份，换机恢复后
+      密文可还原但密钥缺失，解密会抛异常导致启动崩溃；同时也避免 token 密文外流。
+    -->
+    <application
+        android:name=".AudioBookApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="有声伴读"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AudioBookPlayer"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        <!--
+          启动页：新的 LAUNCHER 入口。全屏展示启动图约 1.5 秒后自动跳转到
+          BookListActivity（登录态检查仍在 BookListActivity 内，逻辑不变）。
+        -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AudioBookPlayer.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 原 LAUNCHER 入口，现仅由应用内（启动页/登录成功）跳转，故关闭 exported -->
+        <activity
+            android:name=".BookListActivity"
+            android:exported="false" />
+
+        <activity android:name=".LoginActivity" android:exported="false" />
+        <!--
+          用户协议 / 隐私政策阅读页。正文来自 assets/legal/*.html，
+          离线可读 —— 登录页的协议入口必须在未联网、未登录时也能打开，
+          否则商店审核会判为「无协议」。
+        -->
+        <activity android:name=".LegalActivity" android:exported="false" />
+        <!--
+          主界面（底部导航宿主）。登录成功后 LoginActivity / BookListFragment 会
+          startActivity 跳转到它；漏注册会抛 ActivityNotFoundException 直接崩溃。
+        -->
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".RechargeActivity" android:exported="false" />
+        <activity android:name=".BookContentActivity" android:exported="false" />
+        <activity android:name=".PostDetailActivity" android:exported="false" />
+        <activity android:name=".CreditLedgerActivity" android:exported="false" />
+
+        <!--
+          端侧合成探针页（内部工具）。
+          exported=true 是为了能用 `adb shell am start` 直接拉起它做验证 ——
+          这条命令在非 exported 的 Activity 上会被系统拒绝（本工程在 MainActivity
+          上就踩过），而探针页恰恰最需要"不起 UI 就能跑一次"的能力。
+          它自身不含任何用户数据，也不接受外部参数，风险可控。
+        -->
+        <activity
+            android:name=".moss.MossProbeActivity"
+            android:exported="true"
+            android:label="端侧合成探针" />
+
+        <!--
+          本机合成模块管理页（正式功能）。exported=false：
+          它只从「我的」页进入，不需要被外部拉起（与探针页的取舍相反）。
+        -->
+        <activity
+            android:name=".moss.MossModuleActivity"
+            android:exported="false"
+            android:label="本机语音合成" />
+
+        <service
+            android:name=".PlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!--
+          本机合成前台服务：让几十分钟的推理在用户切走页面/后台后继续跑。
+          exported=false —— 只由 App 内部启动，不接受外部调用。
+          foregroundServiceType=dataSync 与 Manifest 里声明的
+          FOREGROUND_SERVICE_DATA_SYNC 权限必须成对出现。
+        -->
+        <service
+            android:name=".moss.LocalSynthesisService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            P1-3：耳机 / 蓝牙线控依赖 MediaButtonReceiver 把 MEDIA_BUTTON 广播转交
+            PlaybackService 的 MediaSession。原 Manifest 未注册该 receiver，
+            PlaybackService 里的 MediaButtonReceiver.handleIntent(...) 分支是死代码，
+            线控整条链路失效。注册后线控才能工作。
+        -->
+        <receiver
+            android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+          版本更新：把下载到私有目录的 APK 以 content:// 形式交给系统安装器。
+          authorities 用 ${applicationId} 前缀，避免与设备上其它应用的 FileProvider 冲突
+          （同一 authorities 的 provider 无法并存，安装时直接失败）。
+          exported=false + grantUriPermissions=true：自身不可被直接调用，
+          但可以在发起安装 Intent 时为目标应用授予一次性读权限。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>

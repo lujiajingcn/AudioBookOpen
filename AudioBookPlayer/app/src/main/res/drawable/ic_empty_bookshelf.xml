@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 书脊阴影（下半部） -->
+    <path
+        android:fillColor="#B7C0CE"
+        android:pathData="M3 6.5V17.5C3 19.5 7 21 12 21C17 21 21 19.5 21 17.5V6.5C21 8.5 17 10 12 10C7 10 3 8.5 3 6.5Z" />
+    <!-- 书页（上半部高光） -->
+    <path
+        android:fillColor="#D9DEE7"
+        android:pathData="M12 3C7 3 3 4.5 3 6.5V11.5C3 9.5 7 8 12 8C17 8 21 9.5 21 11.5V6.5C21 4.5 17 3 12 3Z" />
+    <!-- 书口横线 -->
+    <path
+        android:fillColor="#9AA6B6"
+        android:pathData="M12 6.4C8.9 6.4 6.4 5.9 6.4 5.2C6.4 4.5 8.9 4 12 4C15.1 4 17.6 4.5 17.6 5.2C17.6 5.9 15.1 6.4 12 6.4Z" />
+</vector>
